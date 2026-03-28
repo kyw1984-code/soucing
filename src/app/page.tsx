@@ -204,11 +204,9 @@ export default function SourcingDashboard() {
   };
 
   const getAiPriceUrl = (imageUrl: string): string => {
-    const isLocal = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-    const imgParam = isLocal
-      ? imageUrl  // 로컬: 원본 URL 직접 사용 (AiPrice가 coupangcdn 접근 가능한 경우)
-      : `${window.location.origin}/api/proxy-image?url=${encodeURIComponent(imageUrl)}`; // 배포: 프록시 경유
-    return `https://www.aiprice.com/s?db=1688&img_url=${encodeURIComponent(imgParam)}`;
+    // AiPrice 서버는 브라우저가 아니므로 쿠팡 CDN에 직접 접근 가능
+    // 프록시 없이 원본 이미지 URL을 직접 전달
+    return `https://www.aiprice.com/s?db=1688&img_url=${encodeURIComponent(imageUrl)}`;
   };
 
   const extractCoreKeyword = (productName: string): string => {
