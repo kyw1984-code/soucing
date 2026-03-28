@@ -203,11 +203,21 @@ export default function SourcingDashboard() {
     localStorage.setItem('sourcingMultiplier', String(val));
   };
 
-  const handleAiPriceSearch = (imageUrl: string) => {
+  const handleAiPriceSearch = async (imageUrl: string, productName: string) => {
     if (!imageUrl) return;
-    // 1688 완제품 이미지 검색 (image_search 경로)
-    const url = `https://s.1688.com/image_search/index.htm?imageAddress=${encodeURIComponent(imageUrl)}`;
-    window.open(url, '_blank');
+
+    // 한국어 제품명 → 중국어 번역
+    let keyword = '';
+    try {
+      const res = await fetch(`/api/translate?text=${encodeURIComponent(productName.slice(0, 60))}`);
+      const data = await res.json();
+      keyword = data.translated || '';
+    } catch {}
+
+    // 1688 이미지 + 키워드 동시 검색
+    const params = new URLSearchParams({ imageAddress: imageUrl });
+    if (keyword) params.set('keywords', keyword);
+    window.open(`https://s.1688.com/youyuan/index.htm?${params.toString()}`, '_blank');
   };
 
   const extractCoreKeyword = (productName: string): string => {
@@ -668,11 +678,11 @@ export default function SourcingDashboard() {
                              </button>
                           </div>
                           <button
-                             onClick={() => handleAiPriceSearch(product.productImage)}
+                             onClick={() => handleAiPriceSearch(product.productImage, product.productName)}
                              className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 transition-all border border-amber-500/20"
                           >
                              <ShoppingBag className="w-3 h-3" />
-                             🔍 1688 이미지 검색
+                             🔍 타오바오 이미지 검색
                           </button>
                         </div>
                       </div>
@@ -720,11 +730,11 @@ export default function SourcingDashboard() {
                       
                       <div className="grid grid-cols-2 gap-4">
                         <button
-                           onClick={() => handleAiPriceSearch(selectedProduct.productImage)}
+                           onClick={() => handleAiPriceSearch(selectedProduct.productImage, selectedProduct.productName)}
                            className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
                         >
                            <ShoppingBag className="w-3.5 h-3.5" />
-                           🔍 1688 이미지 소싱
+                           🔍 타오바오 이미지 소싱
                         </button>
                         <a 
                            href={`https://domeggook.com/ssl/main/search.php?wr_id=&search_text=${encodeURIComponent(extractCoreKeyword(selectedProduct.productName))}`}
