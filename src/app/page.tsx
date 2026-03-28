@@ -210,14 +210,14 @@ export default function SourcingDashboard() {
       return;
     }
 
-    // 프록시 URL 생성 (쿠팡 CDN에 직접 접근할 수 없는 환경 대비)
-    const proxyUrl = `${window.location.origin}/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
-    console.log('[AiPrice] Proxy URL:', proxyUrl);
+    // base64url 인코딩으로 ?url= 없는 깔끔한 프록시 URL 생성
+    // AiPrice(중국 서버)는 한국 CDN 직접 접근 불가 → Vercel 프록시 경유
+    const b64 = btoa(imageUrl).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    const proxyUrl = `${window.location.origin}/api/img/${b64}`;
+    console.log('[AiPrice] Proxy URL (base64):', proxyUrl);
 
-    // AiPrice는 img_url을 raw(미인코딩) URL로 받아야 동작함
-    // 직접 쿠팡 이미지 URL을 인코딩 없이 전달
-    const aiPriceUrl = `https://www.aiprice.com/s?db=1688&img_url=${imageUrl}`;
-    console.log('[AiPrice] Opening (raw):', aiPriceUrl);
+    const aiPriceUrl = `https://www.aiprice.com/s?db=1688&img_url=${proxyUrl}`;
+    console.log('[AiPrice] Opening:', aiPriceUrl);
     window.open(aiPriceUrl, '_blank');
   };
 
