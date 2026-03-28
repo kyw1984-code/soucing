@@ -203,22 +203,11 @@ export default function SourcingDashboard() {
     localStorage.setItem('sourcingMultiplier', String(val));
   };
 
-  const handleAiPriceSearch = async (imageUrl: string) => {
-    console.log('[AiPrice] productImage URL:', imageUrl);
-    if (!imageUrl) {
-      console.warn('[AiPrice] 이미지 URL이 없습니다.');
-      return;
-    }
-
-    // base64url 인코딩으로 ?url= 없는 깔끔한 프록시 URL 생성
-    // AiPrice(중국 서버)는 한국 CDN 직접 접근 불가 → Vercel 프록시 경유
-    const b64 = btoa(imageUrl).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    const proxyUrl = `${window.location.origin}/api/img/${b64}`;
-    console.log('[AiPrice] Proxy URL (base64):', proxyUrl);
-
-    const aiPriceUrl = `https://www.aiprice.com/s?db=1688&img_url=${proxyUrl}`;
-    console.log('[AiPrice] Opening:', aiPriceUrl);
-    window.open(aiPriceUrl, '_blank');
+  const handleAiPriceSearch = (imageUrl: string) => {
+    if (!imageUrl) return;
+    // 1688 자체 이미지 검색 - 서버가 중국에 있어 한국 CDN 직접 접근 가능
+    const url = `https://s.1688.com/youyuan/index.htm?imageAddress=${encodeURIComponent(imageUrl)}`;
+    window.open(url, '_blank');
   };
 
   const extractCoreKeyword = (productName: string): string => {
@@ -683,7 +672,7 @@ export default function SourcingDashboard() {
                              className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 transition-all border border-amber-500/20"
                           >
                              <ShoppingBag className="w-3 h-3" />
-                             🔍 이미지로 소싱 검색
+                             🔍 1688 이미지 검색
                           </button>
                         </div>
                       </div>
@@ -735,7 +724,7 @@ export default function SourcingDashboard() {
                            className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
                         >
                            <ShoppingBag className="w-3.5 h-3.5" />
-                           🇨🇳 1688 이미지 소싱
+                           🔍 1688 이미지 소싱
                         </button>
                         <a 
                            href={`https://domeggook.com/ssl/main/search.php?wr_id=&search_text=${encodeURIComponent(extractCoreKeyword(selectedProduct.productName))}`}
