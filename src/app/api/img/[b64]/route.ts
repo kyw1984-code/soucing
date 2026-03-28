@@ -8,9 +8,9 @@ import { NextRequest, NextResponse } from 'next/server';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { b64: string } }
+  { params }: { params: Promise<{ b64: string }> }
 ) {
-  const b64 = params.b64;
+  const { b64 } = await params;
   if (!b64) {
     return new NextResponse('Missing path', { status: 400 });
   }
