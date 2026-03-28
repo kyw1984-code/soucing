@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchWithPlaywright } from './playwrightFetch';
 import { fetchSummaryFromSearch } from '../searchSummary';
 
 // Optional proxy (e.g., http://user:pass@proxyhost:port)
@@ -38,21 +37,21 @@ async function fetchCoupangReviews(productId: string, cookie: string) {
       headers: buildHeaders(productId, cookie),
     });
 
-    if (response.status === 403) {
-      console.warn('[Coupang Reviews] 403 차단 → Playwright fallback');
-      return await fetchWithPlaywright(productId, cookie);
+    if (response.status === 403 || !response.ok) {
+      console.warn('[Coupang Reviews] 차단됨 status:', response.status);
+      return { reviews: [], summary: { rating: 0, count: 0 } };
     }
 
     const html = await response.text();
     if (html.includes('Access Denied') || html.includes('보안 확인')) {
-      console.warn('[Coupang Reviews] 차단 페이지 감지 → Playwright fallback');
-      return await fetchWithPlaywright(productId, cookie);
+      console.warn('[Coupang Reviews] 차단 페이지 감지');
+      return { reviews: [], summary: { rating: 0, count: 0 } };
     }
 
     return parseReviewsFromHtml(html);
   } catch (e) {
     console.error('[Coupang Reviews] fetch 오류', e);
-    return await fetchWithPlaywright(productId, cookie);
+    return { reviews: [], summary: { rating: 0, count: 0 } };
   }
 }
 
