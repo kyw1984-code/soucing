@@ -214,17 +214,10 @@ export default function SourcingDashboard() {
     const proxyUrl = `${window.location.origin}/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
     console.log('[AiPrice] Proxy URL:', proxyUrl);
 
-    // 프록시를 미리 warm-up (이미지 다운로드 확인)
-    try {
-      const res = await fetch(proxyUrl, { method: 'HEAD' });
-      console.log('[AiPrice] Proxy status:', res.status, 'Content-Type:', res.headers.get('content-type'));
-    } catch (e) {
-      console.warn('[AiPrice] Proxy warm-up failed:', e);
-    }
-
-    // AiPrice로 이동
-    const aiPriceUrl = `https://www.aiprice.com/s?db=1688&img_url=${encodeURIComponent(proxyUrl)}`;
-    console.log('[AiPrice] Opening:', aiPriceUrl);
+    // AiPrice는 img_url을 raw(미인코딩) URL로 받아야 동작함
+    // 직접 쿠팡 이미지 URL을 인코딩 없이 전달
+    const aiPriceUrl = `https://www.aiprice.com/s?db=1688&img_url=${imageUrl}`;
+    console.log('[AiPrice] Opening (raw):', aiPriceUrl);
     window.open(aiPriceUrl, '_blank');
   };
 
