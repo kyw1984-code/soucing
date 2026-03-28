@@ -203,10 +203,29 @@ export default function SourcingDashboard() {
     localStorage.setItem('sourcingMultiplier', String(val));
   };
 
-  const getAiPriceUrl = (imageUrl: string): string => {
-    // AiPrice 서버는 브라우저가 아니므로 쿠팡 CDN에 직접 접근 가능
-    // 프록시 없이 원본 이미지 URL을 직접 전달
-    return `https://www.aiprice.com/s?db=1688&img_url=${encodeURIComponent(imageUrl)}`;
+  const handleAiPriceSearch = async (imageUrl: string) => {
+    console.log('[AiPrice] productImage URL:', imageUrl);
+    if (!imageUrl) {
+      console.warn('[AiPrice] 이미지 URL이 없습니다.');
+      return;
+    }
+
+    // 프록시 URL 생성 (쿠팡 CDN에 직접 접근할 수 없는 환경 대비)
+    const proxyUrl = `${window.location.origin}/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
+    console.log('[AiPrice] Proxy URL:', proxyUrl);
+
+    // 프록시를 미리 warm-up (이미지 다운로드 확인)
+    try {
+      const res = await fetch(proxyUrl, { method: 'HEAD' });
+      console.log('[AiPrice] Proxy status:', res.status, 'Content-Type:', res.headers.get('content-type'));
+    } catch (e) {
+      console.warn('[AiPrice] Proxy warm-up failed:', e);
+    }
+
+    // AiPrice로 이동
+    const aiPriceUrl = `https://www.aiprice.com/s?db=1688&img_url=${encodeURIComponent(proxyUrl)}`;
+    console.log('[AiPrice] Opening:', aiPriceUrl);
+    window.open(aiPriceUrl, '_blank');
   };
 
   const extractCoreKeyword = (productName: string): string => {
@@ -666,15 +685,13 @@ export default function SourcingDashboard() {
                                소싱 분석
                              </button>
                           </div>
-                          <a 
-                             href={getAiPriceUrl(product.productImage)}
-                             target="_blank"
-                             rel="noopener noreferrer"
+                          <button
+                             onClick={() => handleAiPriceSearch(product.productImage)}
                              className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 transition-all border border-amber-500/20"
                           >
                              <ShoppingBag className="w-3 h-3" />
                              🔍 이미지로 소싱 검색
-                          </a>
+                          </button>
                         </div>
                       </div>
                     </motion.div>
@@ -720,15 +737,13 @@ export default function SourcingDashboard() {
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4">
-                        <a 
-                           href={getAiPriceUrl(selectedProduct.productImage)}
-                           target="_blank"
-                           rel="noopener noreferrer"
+                        <button
+                           onClick={() => handleAiPriceSearch(selectedProduct.productImage)}
                            className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
                         >
                            <ShoppingBag className="w-3.5 h-3.5" />
                            🇨🇳 1688 이미지 소싱
-                        </a>
+                        </button>
                         <a 
                            href={`https://domeggook.com/ssl/main/search.php?wr_id=&search_text=${encodeURIComponent(extractCoreKeyword(selectedProduct.productName))}`}
                            target="_blank"
