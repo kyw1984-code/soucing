@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/youngwookkim/Downloads/**)",
+      "Bash(unzip -q \"훈프로 소싱 파인더.zip\")",
+      "Bash(curl -v \"http://localhost:3000/api/coupang?keyword=캠핑의자&minPrice=0&maxPrice=1000000\")",
+      "Bash(curl -s \"http://localhost:3000/api/coupang?keyword=%EC%BA%A0%ED%95%91%EC%9D%98%EC%9E%90&minPrice=0&maxPrice=1000000\")"
+    ]
+  }
+}
