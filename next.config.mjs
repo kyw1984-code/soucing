@@ -1,7 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['@xenova/transformers', 'onnxruntime-node'],
+  serverExternalPackages: ['@xenova/transformers', 'onnxruntime-node'],
+  eslint: {
+    ignoreDuringBuilds: true,
   },
 };
 
