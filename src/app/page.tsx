@@ -205,8 +205,8 @@ export default function SourcingDashboard() {
 
   const handleAiPriceSearch = (imageUrl: string) => {
     if (!imageUrl) return;
-    // 1688 자체 이미지 검색 - 서버가 중국에 있어 한국 CDN 직접 접근 가능
-    const url = `https://s.1688.com/youyuan/index.htm?imageAddress=${encodeURIComponent(imageUrl)}`;
+    // 1688 완제품 이미지 검색 (image_search 경로)
+    const url = `https://s.1688.com/image_search/index.htm?imageAddress=${encodeURIComponent(imageUrl)}`;
     window.open(url, '_blank');
   };
 
