@@ -206,15 +206,25 @@ export default function SourcingDashboard() {
   const handleAiPriceSearch = async (imageUrl: string) => {
     if (!imageUrl) return;
 
-    // 쿠팡 방화벽 우회를 위한 이미지 프록시 생성 (ads-partners만 프록시 처리)
-    let finalImageUrl = imageUrl;
-    if (imageUrl.includes('ads-partners.coupang.com')) {
-      const b64Url = typeof window !== 'undefined' ? window.btoa(imageUrl) : imageUrl;
+    // 1. 이미지 화질 업스케일링 (Aiprice AI가 저해상도 230x230 이미지를 제대로 인식하지 못해 "검색결과 없음" 출력되는 현상 해결)
+    let highResUrl = imageUrl;
+    if (highResUrl.includes('230x230ex') || highResUrl.includes('thumbnail')) {
+      // 230x230 사이즈를 1000x1000으로 강제 치환
+      highResUrl = highResUrl.replace(/\/[0-9]+x[0-9]+ex\//, '/1000x1000ex/');
+      // 혹시 사이즈 토큰이 없는 경우 원본에 가깝게 만들기 위한 정규표현식
+      highResUrl = highResUrl.replace('/thumbnails/remote/230x230ex/', '/image/');
+    }
+
+    // 2. 쿠팡 방화벽 우회를 위한 이미지 프록시 생성 (모든 쿠팡 이미지 대상)
+    // 쿠팡 CDN은 Aiprice(알리윤) IP를 차단하므로 무조건 Vercel 서버를 거쳐 세탁해야 함
+    let finalImageUrl = highResUrl;
+    if (highResUrl.includes('coupang')) {
+      const b64Url = typeof window !== 'undefined' ? window.btoa(highResUrl) : highResUrl;
       finalImageUrl = `${window.location.origin}/api/proxy-image/${b64Url}/image.jpg`;
     }
 
     // AiPrice 역이미지 검색 프록시 URL 구성
-    const aliPriceProxyUrl = `https://www.aiprice.com/s?db=1688&img_url=${encodeURIComponent(finalImageUrl)}`;
+    const aliPriceProxyUrl = `https://www.aiprice.com/s?db=1688&app=1&img_url=${encodeURIComponent(finalImageUrl)}`;
     
     console.log(`[1688 Image Search] Redirecting to AiPrice Proxy... URL: ${aliPriceProxyUrl}`);
     window.open(aliPriceProxyUrl, '_blank');
