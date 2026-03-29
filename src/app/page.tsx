@@ -207,10 +207,11 @@ export default function SourcingDashboard() {
     if (!imageUrl) return;
 
     // 쿠팡 방화벽 우회를 위한 이미지 프록시 생성
-    // Vercel 서버(우리 도메인)를 통해 이미지를 서빙하여 AliPrice 봇이 접근할 수 있도록 함
+    // Vercel 서버(우리 도메인)를 통해 이미지를 서빙하여 AiPrice 봇이 접근할 수 있도록 함
     let finalImageUrl = imageUrl;
     if (imageUrl.includes('ads-partners.coupang.com') || imageUrl.includes('coupangcdn.com')) {
-      finalImageUrl = `${window.location.origin}/api/proxy-image/image.jpg?url=${encodeURIComponent(imageUrl)}`;
+      const b64Url = typeof window !== 'undefined' ? window.btoa(imageUrl) : imageUrl;
+      finalImageUrl = `${window.location.origin}/api/proxy-image/${b64Url}/image.jpg`;
     }
 
     // AiPrice 역이미지 검색 프록시 URL 구성
