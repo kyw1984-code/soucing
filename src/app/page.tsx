@@ -206,14 +206,18 @@ export default function SourcingDashboard() {
   const handleAiPriceSearch = async (_imageUrl: string, productName: string) => {
     if (!productName) return;
 
-    // 한국어 제품명 → 중국어 번역 후 1688 키워드 검색
-    let keyword = productName;
+    // 핵심 키워드만 추출 (예: "삼성 무선충전기 15W 고속" → "무선충전기")
+    const coreKeyword = extractCoreKeyword(productName);
+
+    // 핵심 키워드 → 중국어 번역
+    let keyword = coreKeyword;
     try {
-      const res = await fetch(`/api/translate?text=${encodeURIComponent(productName.slice(0, 60))}`);
+      const res = await fetch(`/api/translate?text=${encodeURIComponent(coreKeyword)}`);
       const data = await res.json();
       if (data.translated) keyword = data.translated;
     } catch {}
 
+    console.log(`[1688] "${productName}" → core: "${coreKeyword}" → zh: "${keyword}"`);
     window.open(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(keyword)}`, '_blank');
   };
 
