@@ -660,15 +660,17 @@ export default function SourcingDashboard() {
                                소싱 분석
                              </button>
                           </div>
-                          <a
-                             href={product.productUrl}
-                             target="_blank"
-                             rel="noopener noreferrer"
+                          <button
+                             onClick={() => {
+                               const b64 = btoa(product.productImage).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+                               const proxyUrl = `https://soucing.vercel.app/api/img/${b64}`;
+                               window.open(`https://s.1688.com/youyuan/index.htm?imageAddress=${encodeURIComponent(proxyUrl)}`, '_blank');
+                             }}
                              className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 transition-all border border-amber-500/20"
                           >
                              <ShoppingBag className="w-3 h-3" />
-                             🔍 1688 이미지 소싱 (AliPrice)
-                          </a>
+                             🔍 1688 이미지 소싱
+                          </button>
                         </div>
                       </div>
                     </motion.div>
@@ -714,15 +716,17 @@ export default function SourcingDashboard() {
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4">
-                        <a
-                           href={selectedProduct.productUrl}
-                           target="_blank"
-                           rel="noopener noreferrer"
+                        <button
+                           onClick={() => {
+                             const b64 = btoa(selectedProduct.productImage).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'');
+                             const proxyUrl = `https://soucing.vercel.app/api/img/${b64}`;
+                             window.open(`https://s.1688.com/youyuan/index.htm?imageAddress=${encodeURIComponent(proxyUrl)}`, '_blank');
+                           }}
                            className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
                         >
                            <ShoppingBag className="w-3.5 h-3.5" />
                            🔍 1688 이미지 소싱
-                        </a>
+                        </button>
                         <a 
                            href={`https://domeggook.com/ssl/main/search.php?wr_id=&search_text=${encodeURIComponent(extractCoreKeyword(selectedProduct.productName))}`}
                            target="_blank"
