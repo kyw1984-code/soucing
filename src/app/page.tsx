@@ -203,7 +203,7 @@ export default function SourcingDashboard() {
     localStorage.setItem('sourcingMultiplier', String(val));
   };
 
-  const handleAiPriceSearch = async (imageUrl: string, _productName: string) => {
+  const handleAiPriceSearch = async (imageUrl: string, db: '1688' | 'tb' = '1688') => {
     if (!imageUrl) return;
 
     // 쿠팡 방화벽 우회를 위한 이미지 프록시 생성
@@ -215,9 +215,9 @@ export default function SourcingDashboard() {
     }
 
     // AiPrice 역이미지 검색 프록시 URL 구성
-    const aliPriceProxyUrl = `https://www.aiprice.com/s?db=1688&img_url=${encodeURIComponent(finalImageUrl)}`;
+    const aliPriceProxyUrl = `https://www.aiprice.com/s?db=${db}&img_url=${encodeURIComponent(finalImageUrl)}`;
     
-    console.log(`[1688 Image Search] Redirecting to AiPrice Proxy... URL: ${aliPriceProxyUrl}`);
+    console.log(`[${db} Image Search] Redirecting to AiPrice Proxy... URL: ${aliPriceProxyUrl}`);
     window.open(aliPriceProxyUrl, '_blank');
   };
 
@@ -678,13 +678,22 @@ export default function SourcingDashboard() {
                                소싱 분석
                              </button>
                           </div>
-                          <button
-                             onClick={() => handleAiPriceSearch(product.productImage, product.productName)}
-                             className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 transition-all border border-amber-500/20"
-                          >
-                             <ShoppingBag className="w-3 h-3" />
-                             🔍 1688 소싱 검색
-                          </button>
+                          <div className="flex gap-2 w-full mt-2">
+                            <button
+                               onClick={() => handleAiPriceSearch(product.productImage, '1688')}
+                               className="flex-1 py-2.5 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all border border-amber-500/20"
+                            >
+                               <ShoppingBag className="w-3 h-3" />
+                               1688 검색
+                            </button>
+                            <button
+                               onClick={() => handleAiPriceSearch(product.productImage, 'tb')}
+                               className="flex-1 py-2.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all border border-rose-500/20"
+                            >
+                               <Search className="w-3 h-3" />
+                               타오바오 검색
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </motion.div>
@@ -730,13 +739,22 @@ export default function SourcingDashboard() {
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4">
-                        <button
-                           onClick={() => handleAiPriceSearch(selectedProduct.productImage, selectedProduct.productName)}
-                           className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
-                        >
-                           <ShoppingBag className="w-3.5 h-3.5" />
-                           🔍 1688 소싱 검색
-                        </button>
+                        <div className="flex flex-col gap-2">
+                          <button
+                             onClick={() => handleAiPriceSearch(selectedProduct.productImage, '1688')}
+                             className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
+                          >
+                             <ShoppingBag className="w-3.5 h-3.5" />
+                             1688 이미지 검색
+                          </button>
+                          <button
+                             onClick={() => handleAiPriceSearch(selectedProduct.productImage, 'tb')}
+                             className="py-3.5 bg-rose-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-rose-200/50 active:scale-95 transition-all"
+                          >
+                             <Search className="w-3.5 h-3.5" />
+                             타오바오 이미지 검색
+                          </button>
+                        </div>
                         <a 
                            href={`https://domeggook.com/ssl/main/search.php?wr_id=&search_text=${encodeURIComponent(extractCoreKeyword(selectedProduct.productName))}`}
                            target="_blank"
