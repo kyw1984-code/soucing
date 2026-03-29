@@ -203,31 +203,12 @@ export default function SourcingDashboard() {
     localStorage.setItem('sourcingMultiplier', String(val));
   };
 
-  const handleAiPriceSearch = async (imageUrl: string) => {
-    if (!imageUrl) return;
-
-    // 1. 이미지 화질 업스케일링 (Aiprice AI가 저해상도 230x230 이미지를 제대로 인식하지 못해 "검색결과 없음" 출력되는 현상 해결)
-    let highResUrl = imageUrl;
-    if (highResUrl.includes('230x230ex') || highResUrl.includes('thumbnail')) {
-      // 230x230 사이즈를 1000x1000으로 강제 치환
-      highResUrl = highResUrl.replace(/\/[0-9]+x[0-9]+ex\//, '/1000x1000ex/');
-      // 혹시 사이즈 토큰이 없는 경우 원본에 가깝게 만들기 위한 정규표현식
-      highResUrl = highResUrl.replace('/thumbnails/remote/230x230ex/', '/image/');
-    }
-
-    // 2. 쿠팡 방화벽 우회를 위한 이미지 프록시 생성 (모든 쿠팡 이미지 대상)
-    // 쿠팡 CDN은 Aiprice(알리윤) IP를 차단하므로 무조건 Vercel 서버를 거쳐 세탁해야 함
-    let finalImageUrl = highResUrl;
-    if (highResUrl.includes('coupang')) {
-      const b64Url = typeof window !== 'undefined' ? window.btoa(highResUrl) : highResUrl;
-      finalImageUrl = `${window.location.origin}/api/proxy-image/${b64Url}/image.jpg`;
-    }
-
-    // AiPrice 역이미지 검색 프록시 URL 구성
-    const aliPriceProxyUrl = `https://www.aiprice.com/s?db=1688&img_url=${encodeURIComponent(finalImageUrl)}`;
+  const handleCoupangAiPriceDirect = (productUrl: string) => {
+    // 사용자가 제안한 가장 확실한 방법: 확장프로그램이 100% 동작하는 '쿠팡 판매페이지'로 직접 연결
+    // 복잡한 백엔드 우회나 API 차단 문제 없이, 네이티브 크롬 확장프로그램의 hover 기능을 즉시 사용 가능
+    window.open(productUrl, '_blank');
     
-    console.log(`[1688 Image Search] Redirecting to AiPrice Proxy... URL: ${aliPriceProxyUrl}`);
-    window.open(aliPriceProxyUrl, '_blank');
+    // (선택적 안내) alert('새 창으로 열린 쿠팡 페이지에서 왼쪽 상단 AiPrice 아이콘을 클릭하세요!');
   };
 
   const handle1688KeywordSearch = async (productName: string) => {
@@ -705,11 +686,11 @@ export default function SourcingDashboard() {
                           </div>
                           <div className="flex gap-2 w-full mt-2">
                             <button
-                               onClick={() => handleAiPriceSearch(product.productImage)}
-                               className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all"
+                               onClick={() => handleCoupangAiPriceDirect(product.productUrl)}
+                               className="flex-[1.5] py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all"
                             >
                                <ShoppingBag className="w-3 h-3" />
-                               1688 (이미지)
+                               쿠팡에서 AiPrice
                             </button>
                             <button
                                onClick={() => handle1688KeywordSearch(product.productName)}
@@ -749,7 +730,14 @@ export default function SourcingDashboard() {
 
 
                     <div className="flex gap-6 items-start border-t border-slate-100 dark:border-slate-700 pt-10">
-                      <img src={selectedProduct.productImage} className="w-20 h-20 rounded-2xl object-cover border shadow-sm" alt="" />
+                      <div className="relative group w-24 h-24 shrink-0">
+                        <img 
+                          src={selectedProduct.productImage.replace(/\/[0-9]+x[0-9]+ex\//, '/1000x1000ex/')} 
+                          className="w-full h-full rounded-2xl object-cover border shadow-sm transition-transform duration-300 group-hover:scale-[2.5] group-hover:z-50 group-hover:translate-x-12 group-hover:translate-y-12 origin-top-left" 
+                          alt="AiPrice Extension Target" 
+                          title="마우스를 오랫동안 올리면 AiPrice 확장이 반응할 수 있습니다"
+                        />
+                      </div>
                       <div>
                         <h3 className="font-bold text-base line-clamp-2 mb-2 leading-tight">{selectedProduct.productName}</h3>
                         <p className="text-sm font-bold text-slate-700 dark:text-slate-300">현재 쿠팡가: {selectedProduct.productPrice.toLocaleString()}원</p>
@@ -765,11 +753,11 @@ export default function SourcingDashboard() {
                       
                       <div className="grid grid-cols-2 gap-3">
                         <button
-                           onClick={() => handleAiPriceSearch(selectedProduct.productImage)}
+                           onClick={() => handleCoupangAiPriceDirect(selectedProduct.productUrl)}
                            className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
                         >
                            <ShoppingBag className="w-3.5 h-3.5" />
-                           1688 이미지 찾기
+                           쿠팡 상세페이지 열기 (AiPrice)
                         </button>
                         <button
                            onClick={() => handle1688KeywordSearch(selectedProduct.productName)}
