@@ -204,11 +204,11 @@ export default function SourcingDashboard() {
   };
 
   const handleCoupangAiPriceDirect = (productUrl: string) => {
-    // 사용자가 제안한 가장 확실한 방법: 확장프로그램이 100% 동작하는 '쿠팡 판매페이지'로 직접 연결
-    // 복잡한 백엔드 우회나 API 차단 문제 없이, 네이티브 크롬 확장프로그램의 hover 기능을 즉시 사용 가능
+    // 사용자가 제공한 캡처 화면과 요청에 따라, 가장 확실한 방법인 '쿠팡 판매페이지'로 직접 이동합니다.
+    // 쿠팡 상세페이지에서 마우스를 대표이미지에 올리면 나타나는 AiPrice 확장 프로그램의 돋보기 버튼을 클릭하는 것이
+    // 현재 가장 성공률이 높고 확실한 소싱 방법이기에, 사용자가 바로 버튼을 누를 수 있도록 해당 페이지를 열어줍니다.
+    if (!productUrl) return;
     window.open(productUrl, '_blank');
-    
-    // (선택적 안내) alert('새 창으로 열린 쿠팡 페이지에서 왼쪽 상단 AiPrice 아이콘을 클릭하세요!');
   };
 
   const handle1688KeywordSearch = async (productName: string) => {
@@ -687,10 +687,10 @@ export default function SourcingDashboard() {
                           <div className="flex gap-2 w-full mt-2">
                             <button
                                onClick={() => handleCoupangAiPriceDirect(product.productUrl)}
-                               className="flex-[1.5] py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all"
+                               className="flex-[2] py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all"
                             >
                                <ShoppingBag className="w-3 h-3" />
-                               쿠팡에서 AiPrice
+                               1688 이미지 (확장프로그램)
                             </button>
                             <button
                                onClick={() => handle1688KeywordSearch(product.productName)}
@@ -757,7 +757,7 @@ export default function SourcingDashboard() {
                            className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
                         >
                            <ShoppingBag className="w-3.5 h-3.5" />
-                           쿠팡 상세페이지 열기 (AiPrice)
+                           쿠팡 상세로 이동 (AiPrice 실행)
                         </button>
                         <button
                            onClick={() => handle1688KeywordSearch(selectedProduct.productName)}
