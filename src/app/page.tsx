@@ -203,22 +203,15 @@ export default function SourcingDashboard() {
     localStorage.setItem('sourcingMultiplier', String(val));
   };
 
-  const handleAiPriceSearch = async (_imageUrl: string, productName: string) => {
-    if (!productName) return;
+  const handleAiPriceSearch = async (imageUrl: string, _productName: string) => {
+    if (!imageUrl) return;
 
-    // 핵심 키워드만 추출 (예: "삼성 무선충전기 15W 고속" → "무선충전기")
-    const coreKeyword = extractCoreKeyword(productName);
-
-    // 핵심 키워드 → 중국어 번역
-    let keyword = coreKeyword;
-    try {
-      const res = await fetch(`/api/translate?text=${encodeURIComponent(coreKeyword)}`);
-      const data = await res.json();
-      if (data.translated) keyword = data.translated;
-    } catch {}
-
-    console.log(`[1688] "${productName}" → core: "${coreKeyword}" → zh: "${keyword}"`);
-    window.open(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(keyword)}`, '_blank');
+    // AliPrice 역이미지 검색 프록시 URL 구성
+    // https://www.aliprice.com/s?db=1688&img_url={IMAGE_URL}
+    const aliPriceProxyUrl = `https://www.aliprice.com/s?db=1688&img_url=${encodeURIComponent(imageUrl)}`;
+    
+    console.log(`[1688 Image Search] Redirecting to AliPrice Proxy... URL: ${aliPriceProxyUrl}`);
+    window.open(aliPriceProxyUrl, '_blank');
   };
 
   const extractCoreKeyword = (productName: string): string => {
