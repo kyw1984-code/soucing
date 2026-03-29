@@ -684,17 +684,25 @@ export default function SourcingDashboard() {
                                소싱 분석
                              </button>
                           </div>
-                          <div className="flex gap-2 w-full mt-2">
+                          <div className="flex gap-2 w-full mt-2 relative z-10">
                             <button
-                               onClick={() => handleCoupangAiPriceDirect(product.productUrl)}
-                               className="flex-[2] py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all"
+                               type="button"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 handleCoupangAiPriceDirect(product.productUrl);
+                               }}
+                               className="flex-[2] py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95"
                             >
                                <ShoppingBag className="w-3 h-3" />
                                1688 이미지 (확장프로그램)
                             </button>
                             <button
-                               onClick={() => handle1688KeywordSearch(product.productName)}
-                               className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all"
+                               type="button"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 handle1688KeywordSearch(product.productName);
+                               }}
+                               className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95"
                             >
                                <Search className="w-3 h-3" />
                                1688 (키워드)
@@ -751,17 +759,25 @@ export default function SourcingDashboard() {
                         <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest">수익성 시뮬레이션</h4>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-2 gap-3 relative z-10">
                         <button
-                           onClick={() => handleCoupangAiPriceDirect(selectedProduct.productUrl)}
-                           className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
+                           type="button"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             handleCoupangAiPriceDirect(selectedProduct.productUrl);
+                           }}
+                           className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all cursor-pointer"
                         >
                            <ShoppingBag className="w-3.5 h-3.5" />
                            쿠팡 상세로 이동 (AiPrice 실행)
                         </button>
                         <button
-                           onClick={() => handle1688KeywordSearch(selectedProduct.productName)}
-                           className="py-3.5 bg-slate-800 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-slate-200/50 active:scale-95 transition-all"
+                           type="button"
+                           onClick={(e) => {
+                             e.stopPropagation();
+                             handle1688KeywordSearch(selectedProduct.productName);
+                           }}
+                           className="py-3.5 bg-slate-800 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-slate-200/50 active:scale-95 transition-all cursor-pointer"
                         >
                            <Search className="w-3.5 h-3.5" />
                            1688 키워드 찾기
