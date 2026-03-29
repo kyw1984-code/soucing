@@ -26,7 +26,6 @@ import {
   Sofa,
   Shirt,
   Cpu,
-  ShoppingBag,
   Download,
   GitCompare,
   X,
@@ -203,21 +202,6 @@ export default function SourcingDashboard() {
     localStorage.setItem('sourcingMultiplier', String(val));
   };
 
-  const extractCoreKeyword = (productName: string): string => {
-    let name = productName;
-    name = name.replace(/\b[A-Za-z]{1,3}[\d][\w-]*/g, '');
-    name = name.replace(/\d+(\.\d+)?\s*(L|ml|kg|g|cm|mm|m|inch|인치|GB|TB|mAh|W|V|Hz|평|세대|단계|개입|매|층|구|포|개|장|벌|켤레|족)/gi, '');
-    name = name.replace(/20\d{2}(년형?|년도|형)?\b/g, '');
-    name = name.replace(/\b\d+\b/g, '');
-    ['정품','공식','신상품','무료배송','당일배송','로켓배송','최신','신제품','풀세트','패키지','한국정품','국내정품','해외직구','직구','NEW','new','특가'].forEach(w => {
-      name = name.replace(new RegExp(w, 'g'), '');
-    });
-    name = name.replace(/[(\[（][^)\]）]*[)\]）]/g, '');
-    name = name.replace(/[^\uAC00-\uD7A3\u0020a-zA-Z]/g, ' ');
-    name = name.replace(/\s+/g, ' ').trim();
-    const words = name.split(' ').filter(w => w.length >= 2);
-    return words.slice(0, 2).join(' ') || productName.split(' ').slice(0, 2).join(' ');
-  };
 
   const calculateProfitData = (salePrice: number, cost: number, shipping: number) => {
     const coupangFeeRate = 0.12; 
@@ -660,15 +644,6 @@ export default function SourcingDashboard() {
                                소싱 분석
                              </button>
                           </div>
-                          <a
-                             href={`/api/img-search/${btoa(product.productImage).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')}`}
-                             target="_blank"
-                             rel="noopener noreferrer"
-                             className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 transition-all border border-amber-500/20"
-                          >
-                             <ShoppingBag className="w-3 h-3" />
-                             🔍 1688 이미지 소싱
-                          </a>
                         </div>
                       </div>
                     </motion.div>
@@ -713,26 +688,6 @@ export default function SourcingDashboard() {
                         <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest">수익성 시뮬레이션</h4>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
-                        <a
-                           href={`/api/img-search/${btoa(selectedProduct.productImage).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')}`}
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
-                        >
-                           <ShoppingBag className="w-3.5 h-3.5" />
-                           🔍 1688 이미지 소싱
-                        </a>
-                        <a 
-                           href={`https://domeggook.com/ssl/main/search.php?wr_id=&search_text=${encodeURIComponent(extractCoreKeyword(selectedProduct.productName))}`}
-                           target="_blank"
-                           rel="noopener noreferrer"
-                           className="py-3.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 border dark:border-slate-700 active:scale-95 transition-all"
-                        >
-                           <Search className="w-3.5 h-3.5" />
-                           도매꾹 키워드 검색
-                        </a>
-                      </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
