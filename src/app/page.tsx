@@ -203,22 +203,37 @@ export default function SourcingDashboard() {
     localStorage.setItem('sourcingMultiplier', String(val));
   };
 
-  const handleAiPriceSearch = async (imageUrl: string, db: '1688' | 'tb' = '1688') => {
+  const handleAiPriceSearch = async (imageUrl: string) => {
     if (!imageUrl) return;
 
-    // 쿠팡 방화벽 우회를 위한 이미지 프록시 생성
-    // Vercel 서버(우리 도메인)를 통해 이미지를 서빙하여 AiPrice 봇이 접근할 수 있도록 함
+    // 쿠팡 방화벽 우회를 위한 이미지 프록시 생성 (ads-partners만 프록시 처리)
     let finalImageUrl = imageUrl;
-    if (imageUrl.includes('ads-partners.coupang.com') || imageUrl.includes('coupangcdn.com')) {
+    if (imageUrl.includes('ads-partners.coupang.com')) {
       const b64Url = typeof window !== 'undefined' ? window.btoa(imageUrl) : imageUrl;
       finalImageUrl = `${window.location.origin}/api/proxy-image/${b64Url}/image.jpg`;
     }
 
     // AiPrice 역이미지 검색 프록시 URL 구성
-    const aliPriceProxyUrl = `https://www.aiprice.com/s?db=${db}&img_url=${encodeURIComponent(finalImageUrl)}`;
+    const aliPriceProxyUrl = `https://www.aiprice.com/s?db=1688&img_url=${encodeURIComponent(finalImageUrl)}`;
     
-    console.log(`[${db} Image Search] Redirecting to AiPrice Proxy... URL: ${aliPriceProxyUrl}`);
+    console.log(`[1688 Image Search] Redirecting to AiPrice Proxy... URL: ${aliPriceProxyUrl}`);
     window.open(aliPriceProxyUrl, '_blank');
+  };
+
+  const handle1688KeywordSearch = async (productName: string) => {
+    if (!productName) return;
+    
+    const coreKeyword = extractCoreKeyword(productName);
+    let keyword = coreKeyword;
+    try {
+      const res = await fetch(`/api/translate?text=${encodeURIComponent(coreKeyword)}`);
+      const data = await res.json();
+      if (data.translated) keyword = data.translated;
+    } catch {}
+
+    const searchUrl = `https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(keyword)}`;
+    console.log(`[1688 Keyword Search] "${productName}" → core: "${coreKeyword}" → zh: "${keyword}"`);
+    window.open(searchUrl, '_blank');
   };
 
   const extractCoreKeyword = (productName: string): string => {
@@ -680,18 +695,18 @@ export default function SourcingDashboard() {
                           </div>
                           <div className="flex gap-2 w-full mt-2">
                             <button
-                               onClick={() => handleAiPriceSearch(product.productImage, '1688')}
-                               className="flex-1 py-2.5 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all border border-amber-500/20"
+                               onClick={() => handleAiPriceSearch(product.productImage)}
+                               className="flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all"
                             >
                                <ShoppingBag className="w-3 h-3" />
-                               1688 검색
+                               1688 (이미지)
                             </button>
                             <button
-                               onClick={() => handleAiPriceSearch(product.productImage, 'tb')}
-                               className="flex-1 py-2.5 bg-rose-500/10 hover:bg-rose-500 hover:text-white text-rose-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-1.5 transition-all border border-rose-500/20"
+                               onClick={() => handle1688KeywordSearch(product.productName)}
+                               className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all"
                             >
                                <Search className="w-3 h-3" />
-                               타오바오 검색
+                               1688 (키워드)
                             </button>
                           </div>
                         </div>
@@ -738,23 +753,22 @@ export default function SourcingDashboard() {
                         <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest">수익성 시뮬레이션</h4>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-2">
-                          <button
-                             onClick={() => handleAiPriceSearch(selectedProduct.productImage, '1688')}
-                             className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
-                          >
-                             <ShoppingBag className="w-3.5 h-3.5" />
-                             1688 이미지 검색
-                          </button>
-                          <button
-                             onClick={() => handleAiPriceSearch(selectedProduct.productImage, 'tb')}
-                             className="py-3.5 bg-rose-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-rose-200/50 active:scale-95 transition-all"
-                          >
-                             <Search className="w-3.5 h-3.5" />
-                             타오바오 이미지 검색
-                          </button>
-                        </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                           onClick={() => handleAiPriceSearch(selectedProduct.productImage)}
+                           className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
+                        >
+                           <ShoppingBag className="w-3.5 h-3.5" />
+                           1688 이미지 찾기
+                        </button>
+                        <button
+                           onClick={() => handle1688KeywordSearch(selectedProduct.productName)}
+                           className="py-3.5 bg-slate-800 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-slate-200/50 active:scale-95 transition-all"
+                        >
+                           <Search className="w-3.5 h-3.5" />
+                           1688 키워드 찾기
+                        </button>
+                      </div>
                         <a 
                            href={`https://domeggook.com/ssl/main/search.php?wr_id=&search_text=${encodeURIComponent(extractCoreKeyword(selectedProduct.productName))}`}
                            target="_blank"
@@ -764,7 +778,6 @@ export default function SourcingDashboard() {
                            <Search className="w-3.5 h-3.5" />
                            도매꾹 키워드 검색
                         </a>
-                      </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
