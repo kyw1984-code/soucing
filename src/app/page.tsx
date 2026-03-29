@@ -203,28 +203,22 @@ export default function SourcingDashboard() {
     localStorage.setItem('sourcingMultiplier', String(val));
   };
 
-  const handleCoupangAiPriceDirect = (productUrl: string) => {
-    // 사용자가 제공한 캡처 화면과 요청에 따라, 가장 확실한 방법인 '쿠팡 판매페이지'로 직접 이동합니다.
-    // 쿠팡 상세페이지에서 마우스를 대표이미지에 올리면 나타나는 AiPrice 확장 프로그램의 돋보기 버튼을 클릭하는 것이
-    // 현재 가장 성공률이 높고 확실한 소싱 방법이기에, 사용자가 바로 버튼을 누를 수 있도록 해당 페이지를 열어줍니다.
-    if (!productUrl) return;
-    window.open(productUrl, '_blank');
-  };
+  const handleAiPriceSearch = async (imageUrl: string) => {
+    console.log('[AiPrice] productImage URL:', imageUrl);
+    if (!imageUrl) {
+      console.warn('[AiPrice] 이미지 URL이 없습니다.');
+      return;
+    }
 
-  const handle1688KeywordSearch = async (productName: string) => {
-    if (!productName) return;
-    
-    const coreKeyword = extractCoreKeyword(productName);
-    let keyword = coreKeyword;
-    try {
-      const res = await fetch(`/api/translate?text=${encodeURIComponent(coreKeyword)}`);
-      const data = await res.json();
-      if (data.translated) keyword = data.translated;
-    } catch {}
+    // base64url 인코딩으로 ?url= 없는 깔끔한 프록시 URL 생성
+    // AiPrice(중국 서버)는 한국 CDN 직접 접근 불가 → Vercel 프록시 경유
+    const b64 = btoa(imageUrl).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+    const proxyUrl = `${window.location.origin}/api/img/${b64}`;
+    console.log('[AiPrice] Proxy URL (base64):', proxyUrl);
 
-    const searchUrl = `https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(keyword)}`;
-    console.log(`[1688 Keyword Search] "${productName}" → core: "${coreKeyword}" → zh: "${keyword}"`);
-    window.open(searchUrl, '_blank');
+    const aiPriceUrl = `https://www.aiprice.com/s?db=1688&img_url=${proxyUrl}`;
+    console.log('[AiPrice] Opening:', aiPriceUrl);
+    window.open(aiPriceUrl, '_blank');
   };
 
   const extractCoreKeyword = (productName: string): string => {
@@ -684,30 +678,13 @@ export default function SourcingDashboard() {
                                소싱 분석
                              </button>
                           </div>
-                          <div className="flex gap-2 w-full mt-2 relative z-10">
-                            <button
-                               type="button"
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 handleCoupangAiPriceDirect(product.productUrl);
-                               }}
-                               className="flex-[2] py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95"
-                            >
-                               <ShoppingBag className="w-3 h-3" />
-                               1688 이미지 (확장프로그램)
-                            </button>
-                            <button
-                               type="button"
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 handle1688KeywordSearch(product.productName);
-                               }}
-                               className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-[10px] font-black flex items-center justify-center gap-1 transition-all cursor-pointer shadow-sm active:scale-95"
-                            >
-                               <Search className="w-3 h-3" />
-                               1688 (키워드)
-                            </button>
-                          </div>
+                          <button
+                             onClick={() => handleAiPriceSearch(product.productImage)}
+                             className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 transition-all border border-amber-500/20"
+                          >
+                             <ShoppingBag className="w-3 h-3" />
+                             🔍 이미지로 소싱 검색
+                          </button>
                         </div>
                       </div>
                     </motion.div>
@@ -738,14 +715,7 @@ export default function SourcingDashboard() {
 
 
                     <div className="flex gap-6 items-start border-t border-slate-100 dark:border-slate-700 pt-10">
-                      <div className="relative group w-24 h-24 shrink-0">
-                        <img 
-                          src={selectedProduct.productImage.replace(/\/[0-9]+x[0-9]+ex\//, '/1000x1000ex/')} 
-                          className="w-full h-full rounded-2xl object-cover border shadow-sm transition-transform duration-300 group-hover:scale-[2.5] group-hover:z-50 group-hover:translate-x-12 group-hover:translate-y-12 origin-top-left" 
-                          alt="AiPrice Extension Target" 
-                          title="마우스를 오랫동안 올리면 AiPrice 확장이 반응할 수 있습니다"
-                        />
-                      </div>
+                      <img src={selectedProduct.productImage} className="w-20 h-20 rounded-2xl object-cover border shadow-sm" alt="" />
                       <div>
                         <h3 className="font-bold text-base line-clamp-2 mb-2 leading-tight">{selectedProduct.productName}</h3>
                         <p className="text-sm font-bold text-slate-700 dark:text-slate-300">현재 쿠팡가: {selectedProduct.productPrice.toLocaleString()}원</p>
@@ -759,30 +729,14 @@ export default function SourcingDashboard() {
                         <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest">수익성 시뮬레이션</h4>
                       </div>
                       
-                      <div className="grid grid-cols-2 gap-3 relative z-10">
+                      <div className="grid grid-cols-2 gap-4">
                         <button
-                           type="button"
-                           onClick={(e) => {
-                             e.stopPropagation();
-                             handleCoupangAiPriceDirect(selectedProduct.productUrl);
-                           }}
-                           className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all cursor-pointer"
+                           onClick={() => handleAiPriceSearch(selectedProduct.productImage)}
+                           className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
                         >
                            <ShoppingBag className="w-3.5 h-3.5" />
-                           쿠팡 상세로 이동 (AiPrice 실행)
+                           🇨🇳 1688 이미지 소싱
                         </button>
-                        <button
-                           type="button"
-                           onClick={(e) => {
-                             e.stopPropagation();
-                             handle1688KeywordSearch(selectedProduct.productName);
-                           }}
-                           className="py-3.5 bg-slate-800 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-slate-200/50 active:scale-95 transition-all cursor-pointer"
-                        >
-                           <Search className="w-3.5 h-3.5" />
-                           1688 키워드 찾기
-                        </button>
-                      </div>
                         <a 
                            href={`https://domeggook.com/ssl/main/search.php?wr_id=&search_text=${encodeURIComponent(extractCoreKeyword(selectedProduct.productName))}`}
                            target="_blank"
@@ -792,6 +746,7 @@ export default function SourcingDashboard() {
                            <Search className="w-3.5 h-3.5" />
                            도매꾹 키워드 검색
                         </a>
+                      </div>
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
