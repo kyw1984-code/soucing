@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic'; // Vercel CDN 캐싱 방지
+
 export async function GET() {
-  // Larger pool of high-potential "Golden Keywords"
   const pool = [
     { keyword: '캠핑용 그리들 팬', category: '캠핑/아웃도어', searchVolume: 82000, competitionRate: 0.85, grade: 'Excellent', hotIndex: 98 },
     { keyword: '무선 보풀제거기 추천', category: '생활가전', searchVolume: 45000, competitionRate: 1.1, grade: 'Excellent', hotIndex: 95 },
@@ -15,19 +16,37 @@ export async function GET() {
     { keyword: '욕실 규조토 매트', category: '욕실용품', searchVolume: 110000, competitionRate: 0.88, grade: 'Excellent', hotIndex: 99 },
     { keyword: '수납용 폴딩 박스', category: '생활잡화', searchVolume: 42000, competitionRate: 1.05, grade: 'Excellent', hotIndex: 91 },
     { keyword: '무선 핸디 청소기', category: '소형가전', searchVolume: 135000, competitionRate: 1.65, grade: 'Good', hotIndex: 87 },
+    { keyword: '접이식 캠핑 의자', category: '캠핑/아웃도어', searchVolume: 76000, competitionRate: 1.0, grade: 'Excellent', hotIndex: 96 },
+    { keyword: '미니 에어프라이어', category: '주방가전', searchVolume: 98000, competitionRate: 1.35, grade: 'Good', hotIndex: 90 },
+    { keyword: '반려견 자동 급수기', category: '반려동물', searchVolume: 39000, competitionRate: 0.9, grade: 'Excellent', hotIndex: 93 },
+    { keyword: '접이식 독서대', category: '사무용품', searchVolume: 55000, competitionRate: 1.0, grade: 'Excellent', hotIndex: 91 },
+    { keyword: '차량용 무선 충전 거치대', category: '자동차용품', searchVolume: 88000, competitionRate: 1.2, grade: 'Good', hotIndex: 92 },
+    { keyword: '실리콘 케이블 정리함', category: '생활잡화', searchVolume: 29000, competitionRate: 0.8, grade: 'Excellent', hotIndex: 89 },
+    { keyword: '냉장고 수납 정리함', category: '주방용품', searchVolume: 63000, competitionRate: 1.1, grade: 'Excellent', hotIndex: 94 },
+    { keyword: '미니 빔프로젝터 휴대용', category: '전자기기', searchVolume: 47000, competitionRate: 1.4, grade: 'Good', hotIndex: 86 },
+    { keyword: '다용도 세탁망 대형', category: '생활용품', searchVolume: 33000, competitionRate: 0.75, grade: 'Excellent', hotIndex: 88 },
   ];
 
-  // Logic: Change keywords every day using Date seed
+  // 날짜 기반 시드로 매일 다른 7개 추출
   const today = new Date();
   const dateSeed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-  
-  // Deterministic shuffle based on seed
-  const shuffled = [...pool].sort((a, b) => {
-    const scoreA = (Array.from(a.keyword).reduce((acc, c) => acc + c.charCodeAt(0), 0) + dateSeed) % 100;
-    const scoreB = (Array.from(b.keyword).reduce((acc, c) => acc + c.charCodeAt(0), 0) + dateSeed) % 100;
-    return scoreB - scoreA;
-  });
 
-  // Return a subset (e.g., 6 items)
-  return NextResponse.json(shuffled.slice(0, 7));
+  // 선형 합동 생성기(LCG)로 결정론적 셔플
+  let seed = dateSeed;
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+    return (seed >>> 0) / 0xffffffff;
+  };
+
+  const shuffled = [...pool];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return NextResponse.json(shuffled.slice(0, 7), {
+    headers: {
+      'Cache-Control': 'no-store', // 브라우저 캐싱도 방지
+    },
+  });
 }
