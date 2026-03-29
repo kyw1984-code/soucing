@@ -206,9 +206,15 @@ export default function SourcingDashboard() {
   const handleAiPriceSearch = async (imageUrl: string, _productName: string) => {
     if (!imageUrl) return;
 
+    // 쿠팡 방화벽 우회를 위한 이미지 프록시 생성
+    // Vercel 서버(우리 도메인)를 통해 이미지를 서빙하여 AliPrice 봇이 접근할 수 있도록 함
+    let finalImageUrl = imageUrl;
+    if (imageUrl.includes('ads-partners.coupang.com') || imageUrl.includes('coupangcdn.com')) {
+      finalImageUrl = `${window.location.origin}/api/proxy-image?url=${encodeURIComponent(imageUrl)}`;
+    }
+
     // AliPrice 역이미지 검색 프록시 URL 구성
-    // https://www.aliprice.com/s?db=1688&img_url={IMAGE_URL}
-    const aliPriceProxyUrl = `https://www.aliprice.com/s?db=1688&img_url=${encodeURIComponent(imageUrl)}`;
+    const aliPriceProxyUrl = `https://www.aliprice.com/s?db=1688&img_url=${encodeURIComponent(finalImageUrl)}`;
     
     console.log(`[1688 Image Search] Redirecting to AliPrice Proxy... URL: ${aliPriceProxyUrl}`);
     window.open(aliPriceProxyUrl, '_blank');
