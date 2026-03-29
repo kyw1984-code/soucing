@@ -203,24 +203,6 @@ export default function SourcingDashboard() {
     localStorage.setItem('sourcingMultiplier', String(val));
   };
 
-  const handleAiPriceSearch = async (imageUrl: string) => {
-    console.log('[AiPrice] productImage URL:', imageUrl);
-    if (!imageUrl) {
-      console.warn('[AiPrice] 이미지 URL이 없습니다.');
-      return;
-    }
-
-    // base64url 인코딩으로 ?url= 없는 깔끔한 프록시 URL 생성
-    // AiPrice(중국 서버)는 한국 CDN 직접 접근 불가 → Vercel 프록시 경유
-    const b64 = btoa(imageUrl).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-    const proxyUrl = `${window.location.origin}/api/img/${b64}`;
-    console.log('[AiPrice] Proxy URL (base64):', proxyUrl);
-
-    const aiPriceUrl = `https://www.aiprice.com/s?db=1688&img_url=${proxyUrl}`;
-    console.log('[AiPrice] Opening:', aiPriceUrl);
-    window.open(aiPriceUrl, '_blank');
-  };
-
   const extractCoreKeyword = (productName: string): string => {
     let name = productName;
     name = name.replace(/\b[A-Za-z]{1,3}[\d][\w-]*/g, '');
@@ -678,13 +660,15 @@ export default function SourcingDashboard() {
                                소싱 분석
                              </button>
                           </div>
-                          <button
-                             onClick={() => handleAiPriceSearch(product.productImage)}
+                          <a
+                             href={product.productUrl}
+                             target="_blank"
+                             rel="noopener noreferrer"
                              className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 transition-all border border-amber-500/20"
                           >
                              <ShoppingBag className="w-3 h-3" />
-                             🔍 이미지로 소싱 검색
-                          </button>
+                             🔍 1688 이미지 소싱 (AliPrice)
+                          </a>
                         </div>
                       </div>
                     </motion.div>
@@ -730,13 +714,15 @@ export default function SourcingDashboard() {
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4">
-                        <button
-                           onClick={() => handleAiPriceSearch(selectedProduct.productImage)}
+                        <a
+                           href={selectedProduct.productUrl}
+                           target="_blank"
+                           rel="noopener noreferrer"
                            className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
                         >
                            <ShoppingBag className="w-3.5 h-3.5" />
-                           🇨🇳 1688 이미지 소싱
-                        </button>
+                           🔍 1688 이미지 소싱
+                        </a>
                         <a 
                            href={`https://domeggook.com/ssl/main/search.php?wr_id=&search_text=${encodeURIComponent(extractCoreKeyword(selectedProduct.productName))}`}
                            target="_blank"
