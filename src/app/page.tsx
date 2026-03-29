@@ -661,7 +661,7 @@ export default function SourcingDashboard() {
                              </button>
                           </div>
                           <a
-                             href={`/api/img/${btoa(product.productImage).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')}`}
+                             href={`/api/img-search/${btoa(product.productImage).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')}`}
                              target="_blank"
                              rel="noopener noreferrer"
                              className="w-full py-2.5 bg-amber-500/10 hover:bg-amber-500 hover:text-white text-amber-600 rounded-xl text-[10px] font-black flex items-center justify-center gap-2 transition-all border border-amber-500/20"
@@ -715,7 +715,7 @@ export default function SourcingDashboard() {
                       
                       <div className="grid grid-cols-2 gap-4">
                         <a
-                           href={`/api/img/${btoa(selectedProduct.productImage).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')}`}
+                           href={`/api/img-search/${btoa(selectedProduct.productImage).replace(/\+/g,'-').replace(/\//g,'_').replace(/=/g,'')}`}
                            target="_blank"
                            rel="noopener noreferrer"
                            className="py-3.5 bg-amber-500 text-white rounded-2xl text-[11px] font-black flex items-center justify-center gap-2 shadow-lg shadow-amber-200/50 active:scale-95 transition-all"
