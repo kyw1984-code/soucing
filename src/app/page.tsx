@@ -224,7 +224,7 @@ export default function SourcingDashboard() {
     }
 
     // AiPrice 역이미지 검색 프록시 URL 구성
-    const aliPriceProxyUrl = `https://www.aiprice.com/s?db=1688&app=1&img_url=${encodeURIComponent(finalImageUrl)}`;
+    const aliPriceProxyUrl = `https://www.aiprice.com/s?db=1688&img_url=${encodeURIComponent(finalImageUrl)}`;
     
     console.log(`[1688 Image Search] Redirecting to AiPrice Proxy... URL: ${aliPriceProxyUrl}`);
     window.open(aliPriceProxyUrl, '_blank');
