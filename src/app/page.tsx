@@ -736,6 +736,30 @@ export default function SourcingDashboard() {
             )}
           </AnimatePresence>
         </main>
+
+        {/* Footer */}
+        <footer className="w-full border-t border-slate-200 dark:border-slate-800 bg-white/70 backdrop-blur-md dark:bg-slate-900/70">
+          <div className="max-w-[1600px] mx-auto px-6 py-6 flex items-center justify-center gap-6">
+            <a
+              href="https://hoonpro.liveklass.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-sm font-bold text-slate-600 dark:text-slate-300"
+            >
+              <ExternalLink className="w-4 h-4" />
+              쇼크트리 홈페이지
+            </a>
+            <a
+              href="https://www.youtube.com/@saupsin89"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl transition-colors text-sm font-bold text-slate-600 dark:text-slate-300"
+            >
+              <ExternalLink className="w-4 h-4" />
+              쇼크트리 유튜브
+            </a>
+          </div>
+        </footer>
     </div>
   );
 }
