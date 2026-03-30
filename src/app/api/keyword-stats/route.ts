@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const keyword = searchParams.get('keyword') || '';
+  const sellerDistribution = searchParams.get('sellerDistribution') || '';
 
   if (!keyword) return NextResponse.json({ error: 'Keyword is required' }, { status: 400 });
 
@@ -41,15 +42,43 @@ export async function GET(request: Request) {
   const totalProducts = Math.floor(searchVolume * productMultiplier * 1.05);
   const competitionRate = (totalProducts / searchVolume).toFixed(2);
   
-  // 4. Balanced Grade Logic
+  // 4. Grade Logic based on seller distribution
   let grade: 'Excellent' | 'Good' | 'Fair' | 'Bad' = 'Bad';
-  const score = parseFloat(competitionRate);
-  if (score < 5.0) grade = 'Excellent';
-  else if (score < 15.0) grade = 'Good';
-  else if (score < 25.0) grade = 'Fair';
-  else grade = 'Bad';
 
-  if (isExactRed && score > 20.0) grade = 'Bad';
+  // Parse seller distribution if provided
+  if (sellerDistribution) {
+    try {
+      const dist = JSON.parse(sellerDistribution);
+      const { rocketPct, jetPct, generalPct } = dist;
+
+      // 일반배송이 높을수록 Excellent, 로켓/그로스 비중이 높을 때는 Bad
+      if (generalPct >= 60) grade = 'Excellent';
+      else if (generalPct >= 40) grade = 'Good';
+      else if (generalPct >= 20) grade = 'Fair';
+      else grade = 'Bad';
+
+      // 로켓/그로스 합산이 매우 높으면 무조건 Bad
+      if (rocketPct + jetPct >= 80) grade = 'Bad';
+    } catch (e) {
+      // Fallback to original logic if parsing fails
+      const score = parseFloat(competitionRate);
+      if (score < 5.0) grade = 'Excellent';
+      else if (score < 15.0) grade = 'Good';
+      else if (score < 25.0) grade = 'Fair';
+      else grade = 'Bad';
+
+      if (isExactRed && score > 20.0) grade = 'Bad';
+    }
+  } else {
+    // Original logic if no seller distribution provided
+    const score = parseFloat(competitionRate);
+    if (score < 5.0) grade = 'Excellent';
+    else if (score < 15.0) grade = 'Good';
+    else if (score < 25.0) grade = 'Fair';
+    else grade = 'Bad';
+
+    if (isExactRed && score > 20.0) grade = 'Bad';
+  }
 
   // 5. PRICE RANGE (Min/Max/Avg)
   const baseAvgPrice = Math.floor((hash % 40) * 1000 + 20000);

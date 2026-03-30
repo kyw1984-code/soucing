@@ -4,7 +4,10 @@
       "Read(//Users/youngwookkim/Downloads/**)",
       "Bash(unzip -q \"훈프로 소싱 파인더.zip\")",
       "Bash(curl -v \"http://localhost:3000/api/coupang?keyword=캠핑의자&minPrice=0&maxPrice=1000000\")",
-      "Bash(curl -s \"http://localhost:3000/api/coupang?keyword=%EC%BA%A0%ED%95%91%EC%9D%98%EC%9E%90&minPrice=0&maxPrice=1000000\")"
+      "Bash(curl -s \"http://localhost:3000/api/coupang?keyword=%EC%BA%A0%ED%95%91%EC%9D%98%EC%9E%90&minPrice=0&maxPrice=1000000\")",
+      "Bash(git add src/app/page.tsx)",
+      "Bash(git add ERROR_VERIFICATION_REPORT.md)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nfeat: 페이지 하단에 쇼크트리 홈페이지 및 유튜브 링크 추가\n\n- 푸터 섹션을 페이지 하단 중앙에 추가\n- 쇼크트리 홈페이지 링크 (https://hoonpro.liveklass.com/)\n- 쇼크트리 유튜브 링크 (https://www.youtube.com/@saupsin89)\n- 새 탭에서 열리도록 설정 및 보안 속성 추가\n- 다크모드 지원 및 호버 효과 적용\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ]
   }
 }

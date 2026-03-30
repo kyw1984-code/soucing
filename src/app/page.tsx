@@ -123,29 +123,29 @@ const SellerLandscape = ({ products }: { products: Product[] }) => {
   const generalPct = (general / total) * 100;
 
   return (
-    <div className="bg-slate-900/40 p-5 rounded-[24px] border border-slate-800 flex flex-col gap-4">
+    <div className="bg-slate-50 p-5 rounded-[24px] border border-slate-200 flex flex-col gap-4">
       <div className="flex justify-between items-center">
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">판매자 경쟁 지형 (TOP {total})</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">판매자 경쟁 분포 (TOP {total})</p>
       </div>
-      
-      <div className="flex h-3 w-full rounded-full overflow-hidden bg-slate-800">
+
+      <div className="flex h-3 w-full rounded-full overflow-hidden bg-slate-200">
         <div style={{ width: `${rocketPct}%` }} className="h-full bg-rose-500 transition-all duration-500" title={`로켓: ${rocket}`} />
-        <div style={{ width: `${jetPct}%` }} className="h-full bg-amber-500 transition-all duration-500" title={`그로스: ${jet}`} />
+        <div style={{ width: `${jetPct}%` }} className="h-full bg-amber-500 transition-all duration-500" title={`그로스(판매자로켓): ${jet}`} />
         <div style={{ width: `${generalPct}%` }} className="h-full bg-emerald-500 transition-all duration-500" title={`일반배송: ${general}`} />
       </div>
 
       <div className="grid grid-cols-3 gap-2">
         <div className="flex flex-col">
           <span className="text-[9px] font-black text-rose-400 uppercase">로켓</span>
-          <span className="text-sm font-black text-white">{Math.round(rocketPct)}%</span>
+          <span className="text-sm font-black text-slate-800">{Math.round(rocketPct)}%</span>
         </div>
         <div className="flex flex-col">
-          <span className="text-[9px] font-black text-amber-400 uppercase">그로스</span>
-          <span className="text-sm font-black text-white">{Math.round(jetPct)}%</span>
+          <span className="text-[9px] font-black text-amber-400 uppercase">그로스(판매자로켓)</span>
+          <span className="text-sm font-black text-slate-800">0%</span>
         </div>
-        <div className="flex flex-col border-l border-slate-700 pl-2">
+        <div className="flex flex-col border-l border-slate-300 pl-2">
           <span className="text-[9px] font-black text-emerald-400 uppercase">일반배송</span>
-          <span className="text-sm font-black text-white">{Math.round(generalPct)}%</span>
+          <span className="text-sm font-black text-slate-800">{Math.round(generalPct)}%</span>
         </div>
       </div>
 
@@ -326,8 +326,10 @@ export default function SourcingDashboard() {
 
   const handleCategorySearch = (subLabel: string, keyword: string) => {
     setActiveCategory(subLabel);
-    setKeyword(keyword);
-    handleSearchWithKeyword(keyword);
+    // 키워드에서 첫 번째 단어만 추출 (공백으로 분리)
+    const firstKeyword = keyword.split(' ')[0];
+    setKeyword(firstKeyword);
+    handleSearchWithKeyword(firstKeyword);
   };
 
   const displayProducts = [...products]
@@ -378,9 +380,22 @@ export default function SourcingDashboard() {
         return;
       }
       setProducts(data);
-      
-      // Fetch market stats
-      const statsRes = await fetch(`/api/keyword-stats?keyword=${kw}`);
+
+      // Calculate seller distribution
+      const total = Math.min(data.length, 20);
+      const topProducts = data.slice(0, total);
+      const rocket = topProducts.filter((p: Product) => p.deliveryType === 'rocket' || (p.isRocket && !p.deliveryType)).length;
+      const jet = topProducts.filter((p: Product) => p.deliveryType === 'jet').length;
+      const general = topProducts.filter((p: Product) => p.deliveryType === 'general' || (!p.isRocket && !p.deliveryType)).length;
+
+      const rocketPct = (rocket / total) * 100;
+      const jetPct = (jet / total) * 100;
+      const generalPct = (general / total) * 100;
+
+      const sellerDist = JSON.stringify({ rocketPct, jetPct, generalPct });
+
+      // Fetch market stats with seller distribution
+      const statsRes = await fetch(`/api/keyword-stats?keyword=${kw}&sellerDistribution=${encodeURIComponent(sellerDist)}`);
       const statsData = await statsRes.json();
       setKeywordStats(statsData);
 
@@ -418,25 +433,25 @@ export default function SourcingDashboard() {
       <main className="max-w-[1600px] mx-auto px-6 py-8 flex flex-col gap-8">
         
         {/* Feature 5: Today's Golden Keywords - Full Width Top Bar */}
-        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white dark:bg-slate-800 rounded-[32px] p-6 border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden">
+        <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="bg-white rounded-[32px] p-6 border border-slate-200 shadow-sm overflow-hidden">
               <div className="flex items-center gap-4 mb-5 px-2">
                  <div className="flex items-center gap-3">
                     <div className="p-2.5 bg-amber-500 rounded-xl shadow-lg shadow-amber-200/50"><Sparkles className="w-5 h-5 text-white" /></div>
-                    <h3 className="text-xl font-black uppercase tracking-tight text-slate-800 dark:text-slate-100">오늘의 <span className="text-amber-500">훈프로 키워드</span></h3>
+                    <h3 className="text-xl font-black uppercase tracking-tight text-slate-800">오늘의 <span className="text-amber-500">훈프로 키워드</span></h3>
                  </div>
-                 <div className="h-px flex-1 bg-gradient-to-r from-slate-100 to-transparent dark:from-slate-700 mx-4" />
-                 <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">Blue Ocean Discovery</p>
+                 <div className="h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent mx-4" />
+                 <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">Blue Ocean Discovery</p>
               </div>
               <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide px-2">
                  {goldenKeywords.length > 0 ? goldenKeywords.map((g, idx) => (
-                    <button key={idx} onClick={() => { setKeyword(g.keyword); handleSearchWithKeyword(g.keyword); }} className="flex-shrink-0 w-[200px] bg-slate-50 dark:bg-slate-900/40 border-2 border-transparent hover:border-amber-400/50 p-3.5 rounded-[24px] flex items-center justify-between transition-all group active:scale-95 shadow-sm">
+                    <button key={idx} onClick={() => { setKeyword(g.keyword); handleSearchWithKeyword(g.keyword); }} className="flex-shrink-0 w-[200px] bg-white border-2 border-slate-200 hover:border-amber-400/50 p-3.5 rounded-[24px] flex items-center justify-between transition-all group active:scale-95 shadow-sm">
                        <div className="text-left overflow-hidden">
-                          <p className="text-sm font-black text-slate-800 dark:text-slate-100 truncate group-hover:text-amber-400 transition-colors uppercase">{g.keyword}</p>
-                          <p className="text-[9px] text-slate-400 font-bold mt-0.5 tracking-tight">{g.category}</p>
+                          <p className="text-sm font-black text-slate-800 truncate group-hover:text-amber-400 transition-colors uppercase">{g.keyword}</p>
+                          <p className="text-[9px] text-slate-500 font-bold mt-0.5 tracking-tight">{g.category}</p>
                        </div>
                        <div className="flex flex-col items-end ml-3">
                           <span className="text-[9px] font-black text-amber-500">{g.hotIndex}%</span>
-                          <div className="w-7 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mt-1 overflow-hidden"><div className="h-full bg-amber-500" style={{ width: `${g.hotIndex}%` }} /></div>
+                          <div className="w-7 h-1 bg-slate-200 rounded-full mt-1 overflow-hidden"><div className="h-full bg-amber-500" style={{ width: `${g.hotIndex}%` }} /></div>
                        </div>
                     </button>
                  )) : [1,2,3,4,5,6].map(i => <div key={i} className="w-[200px] h-14 bg-slate-100 animate-pulse rounded-[24px]" />)}
@@ -446,10 +461,10 @@ export default function SourcingDashboard() {
         {/* Global Horizontal Control Bar (Categories First, then Search) */}
         <div className="sticky top-[64px] z-30 flex flex-col gap-4 bg-[#F8FAFC]/80 backdrop-blur-md pb-4 pt-2 dark:bg-slate-900/80">
            {/* Row 1: Category Discovery (Horizontal Navigation) */}
-           <div className="bg-white dark:bg-slate-800 rounded-[28px] p-3 border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex items-center gap-4">
-              <div className="flex items-center gap-2 px-3 border-r pr-6 shrink-0">
+           <div className="bg-white rounded-[28px] p-3 border border-slate-200 shadow-sm overflow-hidden flex items-center gap-4">
+              <div className="flex items-center gap-2 px-3 border-r border-slate-200 pr-6 shrink-0">
                  <Sparkles className="w-4 h-4 text-emerald-500" />
-                 <span className="text-[11px] font-black uppercase tracking-widest text-slate-400">카테고리</span>
+                 <span className="text-[11px] font-black uppercase tracking-widest text-slate-500">카테고리</span>
               </div>
               <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                  {CATEGORIES.map((cat) => (
@@ -496,16 +511,16 @@ export default function SourcingDashboard() {
            </div>
 
            {/* Row 2: Search & Analysis Tools */}
-           <div className="bg-white dark:bg-slate-800 rounded-[32px] p-4 border border-slate-100 dark:border-slate-700 shadow-xl flex items-center gap-4">
+           <div className="bg-white rounded-[32px] p-4 border border-slate-200 shadow-xl flex items-center gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <input 
-                  type="text" 
-                  value={keyword} 
-                  onChange={(e) => setKeyword(e.target.value)} 
+                <input
+                  type="text"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="공략할 상품 키워드를 입력하세요..." 
-                  className="w-full pl-12 pr-6 py-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl outline-none text-sm font-bold shadow-inner focus:ring-2 ring-indigo-500/20 transition-all" 
+                  placeholder="공략할 상품 키워드를 입력하세요..."
+                  className="w-full pl-12 pr-6 py-4 bg-slate-50 border-none rounded-2xl outline-none text-sm font-bold shadow-inner focus:ring-2 ring-indigo-500/20 transition-all"
                 />
               </div>
               <button 
@@ -533,14 +548,14 @@ export default function SourcingDashboard() {
           {/* Keyword Insight Dashboard - New (Feature 3) */}
           <AnimatePresence>
             {!loading && keywordStats && products.length > 0 && (
-              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="bg-white dark:bg-slate-800 rounded-[32px] p-8 border border-slate-100 dark:border-slate-700 shadow-xl overflow-hidden">
+              <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="bg-white rounded-[32px] p-8 border border-slate-200 shadow-xl overflow-hidden">
                 <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center gap-3">
-                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl"><TrendingUp className="w-6 h-6 text-indigo-400" /></div>
+                    <div className="p-3 bg-indigo-50 rounded-2xl"><TrendingUp className="w-6 h-6 text-indigo-400" /></div>
                     <div>
-                      <h2 className="text-xl font-black">{keywordStats.keyword} <span className="text-slate-400 font-bold ml-2">시장성 분석</span></h2>
+                      <h2 className="text-xl font-black text-slate-800">{keywordStats.keyword} <span className="text-slate-500 font-bold ml-2">시장성 분석</span></h2>
                       <div className="flex items-center gap-2 mt-1">
-                        <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Market Insight Analytics</p>
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Market Insight Analytics</p>
                         <span className="px-2 py-0.5 bg-indigo-500/10 text-indigo-400 text-[9px] font-black rounded-md border border-indigo-500/20">{keywordStats.marketTrend}</span>
                       </div>
                     </div>
@@ -558,10 +573,10 @@ export default function SourcingDashboard() {
                         { label: '월간 검색수', val: keywordStats.searchVolume.toLocaleString(), detail: '네이버/쿠팡 추정', color: 'text-amber-400', isTrend: true },
                         { label: '총 등록 상품', val: keywordStats.totalProducts.toLocaleString(), detail: '수집된 실시간 데이터', color: 'text-blue-400' }
                       ].map((item, idx) => (
-                        <div key={idx} className="bg-slate-900/40 p-5 rounded-[24px] border border-slate-800 relative overflow-hidden group mb-4 last:mb-0">
-                           <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${item.isTrend ? item.color : 'text-slate-400'}`}>{item.label}</p>
+                        <div key={idx} className="bg-slate-50 p-5 rounded-[24px] border border-slate-200 relative overflow-hidden group mb-4 last:mb-0">
+                           <p className={`text-[10px] font-black uppercase tracking-widest mb-2 ${item.isTrend ? item.color : 'text-slate-500'}`}>{item.label}</p>
                            <p className={`text-2xl font-black ${item.color}`}>{item.val}</p>
-                           <p className="text-[10px] text-slate-400 font-bold mt-1">⎯ {item.detail}</p>
+                           <p className="text-[10px] text-slate-500 font-bold mt-1">⎯ {item.detail}</p>
                            {item.isTrend && keywordStats.trendData && (
                               <div className="absolute bottom-0 left-0 right-0 opacity-40 group-hover:opacity-100 transition-opacity">
                                  <Sparkline data={keywordStats.trendData} />
@@ -576,10 +591,10 @@ export default function SourcingDashboard() {
                         { label: '경쟁 강도', val: keywordStats.competitionRate, detail: `${keywordStats.competitionRate < 5.0 ? '블루오션 (강력추천)' : keywordStats.competitionRate < 15.0 ? '양호한 시장 (추천)' : '레드오션 (진입주의)'}`, color: keywordStats.competitionRate < 5.0 ? 'text-emerald-400' : keywordStats.competitionRate < 15.0 ? 'text-indigo-400' : 'text-rose-400' },
                         { label: '평균 객단가', val: `${keywordStats.averagePrice.toLocaleString()}원`, detail: `${keywordStats.minPrice.toLocaleString()} ~ ${keywordStats.maxPrice.toLocaleString()} (범위)`, color: 'text-amber-400' }
                       ].map((item, idx) => (
-                        <div key={idx} className="bg-slate-900/40 p-5 rounded-[24px] border border-slate-800 relative overflow-hidden group mb-4 last:mb-0">
-                           <p className={`text-[10px] font-black uppercase tracking-widest mb-2 text-slate-400`}>{item.label}</p>
+                        <div key={idx} className="bg-slate-50 p-5 rounded-[24px] border border-slate-200 relative overflow-hidden group mb-4 last:mb-0">
+                           <p className={`text-[10px] font-black uppercase tracking-widest mb-2 text-slate-500`}>{item.label}</p>
                            <p className={`text-2xl font-black ${item.color}`}>{item.val}</p>
-                           <p className="text-[10px] text-slate-400 font-bold mt-1">⎯ {item.detail}</p>
+                           <p className="text-[10px] text-slate-500 font-bold mt-1">⎯ {item.detail}</p>
                         </div>
                       ))}
                     </div>
@@ -594,9 +609,9 @@ export default function SourcingDashboard() {
 
           {!loading && products.length > 0 && (
             <div className="flex items-center gap-3">
-               <div className="flex items-center gap-1.5 bg-white dark:bg-slate-800 rounded-xl p-1 border dark:border-slate-700 shadow-sm">
+               <div className="flex items-center gap-1.5 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
                 {(['all', 'Excellent', 'Good', 'Fair', 'Bad'] as const).map(g => (
-                  <button key={g} onClick={() => setGradeFilter(g)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${gradeFilter === g ? 'bg-slate-800 text-white' : 'text-slate-400'}`}>{g}</button>
+                  <button key={g} onClick={() => setGradeFilter(g)} className={`px-3 py-1.5 rounded-lg text-xs font-bold ${gradeFilter === g ? 'bg-slate-800 text-white' : 'text-slate-500'}`}>{g}</button>
                 ))}
               </div>
             </div>
@@ -609,7 +624,7 @@ export default function SourcingDashboard() {
               <div className="grid grid-cols-3 gap-6">
                 <AnimatePresence>
                   {displayProducts.map((product, index) => (
-                    <motion.div key={product.productId} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }} className="group bg-white dark:bg-slate-800 rounded-2xl shadow-sm border dark:border-slate-700 overflow-hidden flex flex-col">
+                    <motion.div key={product.productId} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.05 }} className="group bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col">
                       <div className="relative aspect-square overflow-hidden bg-slate-100">
                         <img src={product.productImage} alt={product.productName} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                         <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
@@ -631,14 +646,14 @@ export default function SourcingDashboard() {
 
                         <div className="flex flex-col gap-2 mt-auto">
                           <div className="flex gap-2">
-                             <a href={product.productUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-[11px] font-bold text-slate-600 flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors"><ExternalLink className="w-3 h-3" />링크</a>
-                             <button 
+                             <a href={product.productUrl} target="_blank" rel="noopener noreferrer" className="flex-1 py-3 bg-slate-50 rounded-xl text-[11px] font-bold text-slate-600 flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors"><ExternalLink className="w-3 h-3" />링크</a>
+                             <button
                                onClick={() => {
                                    setSelectedProduct(product);
                                    setIsDrawerOpen(true);
                                    setWholesalePrice(0);
                                 }}
-                                className="flex-[2] py-3 bg-slate-900 dark:bg-indigo-600 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors"
+                                className="flex-[2] py-3 bg-slate-900 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors"
                              >
                                <LayoutDashboard className="w-3 h-3" />
                                소싱 분석
@@ -663,73 +678,73 @@ export default function SourcingDashboard() {
             {isDrawerOpen && selectedProduct && (
               <>
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsDrawerOpen(false)} className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm cursor-pointer" />
-                <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed top-0 right-0 h-full w-[450px] bg-slate-900 z-[60] shadow-2xl flex flex-col">
-                  <div className="p-8 border-b dark:border-slate-700 flex items-center justify-between">
-                    <div><h2 className="text-xl font-bold">소싱 수익성 분석</h2></div>
-                    <button onClick={() => setIsDrawerOpen(false)}><ChevronRight className="w-6 h-6" /></button>
+                <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} className="fixed top-0 right-0 h-full w-[450px] bg-white z-[60] shadow-2xl flex flex-col">
+                  <div className="p-8 border-b border-slate-200 flex items-center justify-between">
+                    <div><h2 className="text-xl font-bold text-slate-800">소싱 수익성 분석</h2></div>
+                    <button onClick={() => setIsDrawerOpen(false)}><ChevronRight className="w-6 h-6 text-slate-600" /></button>
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-8 space-y-10 scrollbar-hide">
 
 
 
-                    <div className="flex gap-6 items-start border-t border-slate-100 dark:border-slate-700 pt-10">
+                    <div className="flex gap-6 items-start border-t border-slate-200 pt-10">
                       <img src={selectedProduct.productImage} className="w-20 h-20 rounded-2xl object-cover border shadow-sm" alt="" />
                       <div>
-                        <h3 className="font-bold text-base line-clamp-2 mb-2 leading-tight">{selectedProduct.productName}</h3>
-                        <p className="text-sm font-bold text-slate-700 dark:text-slate-300">현재 쿠팡가: {selectedProduct.productPrice.toLocaleString()}원</p>
+                        <h3 className="font-bold text-base line-clamp-2 mb-2 leading-tight text-slate-800">{selectedProduct.productName}</h3>
+                        <p className="text-sm font-bold text-slate-600">현재 쿠팡가: {selectedProduct.productPrice.toLocaleString()}원</p>
                       </div>
                     </div>
 
 
-                    <div className="space-y-6 pt-6 border-t border-dashed">
+                    <div className="space-y-6 pt-6 border-t border-dashed border-slate-200">
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4 text-emerald-500" />
-                        <h4 className="text-sm font-black text-slate-400 uppercase tracking-widest">수익성 시뮬레이션</h4>
+                        <h4 className="text-sm font-black text-slate-500 uppercase tracking-widest">수익성 시뮬레이션</h4>
                       </div>
                       
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="text-[10px] font-bold text-slate-400 mb-2 block uppercase text-center">도매 매입가 (위안)</label>
-                          <input 
-                            type="number" 
+                          <label className="text-[10px] font-bold text-slate-500 mb-2 block uppercase text-center">도매 매입가 (위안)</label>
+                          <input
+                            type="number"
                             placeholder="예: 25.5"
-                            onChange={(e) => setWholesalePrice(Math.round(Number(e.target.value) * sourcingMultiplier))} 
-                            className="text-center w-full px-4 py-4 bg-slate-50 dark:bg-slate-900 border dark:border-slate-800 rounded-2xl text-sm font-bold outline-none border-indigo-100" 
+                            onChange={(e) => setWholesalePrice(Math.round(Number(e.target.value) * sourcingMultiplier))}
+                            className="text-center w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none"
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-bold text-slate-400 mb-2 block uppercase text-center">소싱 배수(환율/관세)</label>
-                          <input 
-                            type="number" 
-                            value={sourcingMultiplier} 
-                            onChange={(e) => handleMultiplierChange(Number(e.target.value))} 
-                            className="text-center w-full px-4 py-4 bg-slate-50 dark:bg-slate-900 border dark:border-slate-800 rounded-2xl text-sm font-bold outline-none" 
+                          <label className="text-[10px] font-bold text-slate-500 mb-2 block uppercase text-center">소싱 배수(환율/관세)</label>
+                          <input
+                            type="number"
+                            value={sourcingMultiplier}
+                            onChange={(e) => handleMultiplierChange(Number(e.target.value))}
+                            className="text-center w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none"
                           />
                         </div>
                       </div>
 
-                      <div className="bg-slate-50 dark:bg-slate-900/40 rounded-2xl p-4 flex items-center justify-between border">
+                      <div className="bg-slate-50 rounded-2xl p-4 flex items-center justify-between border border-slate-200">
                         <span className="text-xs font-bold text-slate-500">예상 원가(합계)</span>
                         <span className="text-sm font-black text-indigo-400">{wholesalePrice.toLocaleString()}원</span>
                       </div>
 
-                      <div className={`p-8 rounded-[32px] border-2 ${margin > 20 ? 'bg-emerald-50 border-emerald-100 dark:bg-emerald-900/10' : 'bg-slate-50 border-slate-100 dark:bg-slate-900/40'}`}>
+                      <div className={`p-8 rounded-[32px] border-2 ${margin > 20 ? 'bg-emerald-50 border-emerald-100' : 'bg-slate-50 border-slate-200'}`}>
                         <div className="flex justify-between items-center mb-6">
                            <span className="text-sm font-bold text-slate-500">예상 마진율</span>
                            <span className="text-3xl font-black text-emerald-600">{margin.toFixed(1)}%</span>
                         </div>
-                        <div className="pt-6 flex justify-between items-center border-t border-dashed">
-                           <span className="font-bold text-lg">최종 순이익</span>
+                        <div className="pt-6 flex justify-between items-center border-t border-dashed border-slate-200">
+                           <span className="font-bold text-lg text-slate-800">최종 순이익</span>
                            <span className={`text-2xl font-black ${profit > 0 ? 'text-emerald-600' : 'text-rose-500'}`}>{profit.toLocaleString()}원</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  <div className="p-8 bg-slate-50 dark:bg-slate-900/50 border-t">
-                    <button onClick={() => setIsDrawerOpen(false)} className="w-full py-5 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 font-black rounded-2xl">분석 완료</button>
+                  <div className="p-8 bg-slate-50 border-t border-slate-200">
+                    <button onClick={() => setIsDrawerOpen(false)} className="w-full py-5 bg-slate-900 text-white font-black rounded-2xl">분석 완료</button>
                   </div>
                 </motion.div>
               </>
