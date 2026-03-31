@@ -61,7 +61,9 @@ const Sparkline = ({ data }: { data: number[] }) => {
       <div className="flex items-end gap-2 h-40 relative px-1">
         {safeData.map((val, i) => {
           // 최소 높이 15% 보장, 최대 100%
-          const heightPercent = 15 + ((val - min) / range) * 85;
+          const isFlat = max === min;
+          const heightPercent = isFlat ? 50 : 15 + ((val - min) / range) * 85;
+
           return (
             <div
               key={i}
@@ -70,10 +72,10 @@ const Sparkline = ({ data }: { data: number[] }) => {
               onMouseLeave={() => setHoveredIndex(null)}
             >
               <div
-                className={`w-full rounded-t-[6px] transition-all duration-500 relative border-x border-t border-transparent ${
+                className={`w-full rounded-t-[6px] transition-all duration-500 relative ${
                   hoveredIndex === i 
-                    ? "bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]" 
-                    : "bg-indigo-500/20 group-hover:bg-indigo-500/40"
+                    ? "bg-amber-400 shadow-md" 
+                    : "bg-indigo-100 group-hover:bg-indigo-200"
                 }`}
                 style={{ height: `${heightPercent}%` }}
               >
@@ -93,7 +95,7 @@ const Sparkline = ({ data }: { data: number[] }) => {
           );
         })}
       </div>
-      <div className="flex justify-between px-1 pt-3 border-t border-slate-100/50">
+      <div className="flex justify-between px-1 pt-3 border-t border-slate-100">
         {months.map((m, i) => (
           <span
             key={i}
@@ -105,10 +107,10 @@ const Sparkline = ({ data }: { data: number[] }) => {
           </span>
         ))}
       </div>
-      <div className="bg-indigo-50/50 rounded-xl py-2 px-3 flex items-center justify-center gap-2 mt-2">
+      <div className="bg-indigo-50 rounded-xl py-2 px-3 flex items-center justify-center gap-2 mt-2">
         <TrendingUp className="w-3 h-3 text-indigo-500" />
-        <p className="text-[10px] font-black text-indigo-600/70 uppercase tracking-[0.1em]">
-          Monthly Analytics (Jan - Dec Trend)
+        <p className="text-[10px] font-black text-indigo-600 uppercase tracking-[0.1em]">
+          월간 검색량 추이 분석 (1월 - 12월)
         </p>
       </div>
     </div>

@@ -117,22 +117,24 @@ export async function GET(request: Request) {
       if (naverRes.ok) {
         const naverData = await naverRes.json();
         const results = naverData.results?.[0]?.data || [];
-        // Map relative volume (0-100) to absolute searchVolume
-        trendData = results.map((d: any) => Math.floor(searchVolume * (d.ratio / 100)));
         
-        // Fill up to 12 months if needed
-        while (trendData.length < 12) trendData.unshift(Math.floor(searchVolume * 0.5));
-        if (trendData.length > 12) trendData = trendData.slice(-12);
+        if (results.length > 0) {
+          trendData = results.map((d: any) => Math.floor(searchVolume * (Math.max(d.ratio, 5) / 100)));
+          while (trendData.length < 12) {
+            trendData.unshift(Math.floor(searchVolume * 0.3));
+          }
+          if (trendData.length > 12) trendData = trendData.slice(-12);
+        }
       }
     } catch (e) {
       console.error('[Naver API Error]', e);
     }
   }
 
-  // Fallback to Mock Trend Data if API fails or keys missing
-  if (trendData.length === 0) {
+  // Fallback to Mock Trend Data if API fails or returns no valid data
+  if (!trendData || trendData.length === 0) {
     trendData = Array.from({ length: 12 }, (_, i) => {
-      const monthHash = Math.sin((hash + i) * 0.5) * 0.3 + 1;
+      const monthHash = Math.sin((hash + i) * 0.5) * 0.3 + 1; // 0.7 to 1.3 variance
       return Math.floor(searchVolume * monthHash * 0.8);
     });
   }
