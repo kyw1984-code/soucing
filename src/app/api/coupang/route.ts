@@ -360,9 +360,8 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
     // 배송 유형 (판매자로켓/그로스 분리)
     let explicitDelivery = item.deliveryType;
     if (!explicitDelivery && isRocket) {
-      // API 폴백 시 로켓 상품의 약 25%를 판매자로켓(제트/그로스)으로 분류 (상품 ID 기반 고정 난수 사용)
-      const productIdHash = parseInt((item.productId || '0').toString().slice(-2), 10);
-      explicitDelivery = productIdHash < 25 ? 'jet' : 'rocket';
+      // API 폴백 시 구분이 불가하므로 실제 데이터에 가깝게 로켓으로 통일 (유저 혼동 방지)
+      explicitDelivery = 'rocket';
     } else if (!explicitDelivery) {
       explicitDelivery = 'general';
     }
