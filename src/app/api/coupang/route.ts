@@ -410,6 +410,7 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
 
     return {
       ...item,
+      deliveryType, // Ensure the mapped/heuristic deliveryType is returned to the client
       calculated: {
         saleIndex,
         competitionStrength,
