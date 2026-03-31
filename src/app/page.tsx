@@ -810,7 +810,7 @@ export default function SourcingDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 overflow-hidden">
+    <div className="min-h-screen bg-white text-slate-900">
       {/* Header */}
       <nav className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/70 backdrop-blur-md">
         <div className="max-w-[1600px] mx-auto px-6 h-16 flex items-center justify-between">
@@ -912,12 +912,20 @@ export default function SourcingDashboard() {
                   </button>
                   <AnimatePresence>
                     {expandedCategory === cat.label && (
-                      <motion.div
-                        initial={{ y: 20, opacity: 0 }}
-                        animate={{ y: 0, opacity: 1 }}
-                        exit={{ y: 20, opacity: 0 }}
-                        className="fixed top-32 left-8 right-8 z-40 bg-white/95 backdrop-blur-3xl rounded-[40px] p-10 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-slate-200 ring-1 ring-slate-200/50 max-h-[85vh] overflow-y-auto"
-                      >
+                      <>
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          onClick={() => setExpandedCategory(null)}
+                          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm"
+                        />
+                        <motion.div
+                          initial={{ scale: 0.95, opacity: 0, y: 20 }}
+                          animate={{ scale: 1, opacity: 1, y: 0 }}
+                          exit={{ scale: 0.95, opacity: 0, y: 20 }}
+                          className="fixed top-[10%] left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-[1400px] bg-white rounded-[48px] p-12 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-200/50 max-h-[85vh] overflow-y-auto custom-scrollbar"
+                        >
                         <div className="flex items-center justify-between mb-10 pb-8 border-b border-slate-100">
                           <div className="flex items-center gap-4">
                             <div className="p-4 bg-indigo-600 rounded-2xl shadow-xl shadow-indigo-100">
@@ -968,8 +976,9 @@ export default function SourcingDashboard() {
                               </div>
                             </div>
                           ))}
-                        </div>
-                      </motion.div>
+                          </div>
+                        </motion.div>
+                      </>
                     )}
                   </AnimatePresence>
                 </div>
