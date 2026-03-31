@@ -58,7 +58,7 @@ const Sparkline = ({ data }: { data: number[] }) => {
 
   return (
     <div className="w-full flex flex-col gap-4">
-      <div className="flex items-end gap-2 h-40 relative px-1">
+      <div className="flex items-stretch gap-2 h-40 relative px-1">
         {safeData.map((val, i) => {
           // 최소 높이 15% 보장, 최대 100%
           const isFlat = max === min;
@@ -67,7 +67,7 @@ const Sparkline = ({ data }: { data: number[] }) => {
           return (
             <div
               key={i}
-              className="flex-1 relative group"
+              className="flex-1 flex flex-col justify-end relative group"
               onMouseEnter={() => setHoveredIndex(i)}
               onMouseLeave={() => setHoveredIndex(null)}
             >
