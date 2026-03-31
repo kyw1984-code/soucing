@@ -53,7 +53,7 @@ const Sparkline = ({ data }: { data: number[] }) => {
 
   return (
     <div className="w-full flex flex-col gap-3">
-      <div className="flex items-end gap-1.5 h-32 relative">
+      <div className="flex items-end gap-1.5 h-48 relative">
         {data.map((val, i) => {
           const heightPercent = ((val - min) / range) * 100;
           return (
@@ -88,7 +88,7 @@ const Sparkline = ({ data }: { data: number[] }) => {
           </span>
         ))}
       </div>
-      <p className="text-[9px] font-black text-slate-500 text-center uppercase tracking-widest">월간 검색량 추이 (Jan - Dec)</p>
+      <p className="text-[9px] font-black text-slate-500 text-center uppercase tracking-widest">월간 검색량 추이 (1월 - 12월)</p>
     </div>
   );
 };
@@ -126,10 +126,23 @@ const SellerLandscape = ({ products }: { products: Product[] }) => {
 
   const total = Math.min(products.length, 20); // Top 20 analysis
   const topProducts = products.slice(0, total);
-  
+
   const rocket = topProducts.filter(p => p.deliveryType === 'rocket' || (p.isRocket && !p.deliveryType)).length;
   const jet = topProducts.filter(p => p.deliveryType === 'jet').length;
   const general = topProducts.filter(p => p.deliveryType === 'general' || (!p.isRocket && !p.deliveryType)).length;
+
+  // 디버그 로그
+  console.log('[SellerLandscape] 상품 배송 타입 분석:', {
+    total,
+    rocket,
+    jet,
+    general,
+    sample: topProducts.slice(0, 3).map(p => ({
+      name: p.productName.substring(0, 20),
+      deliveryType: p.deliveryType,
+      isRocket: p.isRocket
+    }))
+  });
 
   const rocketPct = (rocket / total) * 100;
   const jetPct = (jet / total) * 100;
@@ -748,17 +761,17 @@ export default function SourcingDashboard() {
               </div>
               <div className="flex gap-5 overflow-x-auto pb-4 scrollbar-hide px-2">
                  {goldenKeywords.length > 0 ? goldenKeywords.map((g, idx) => (
-                    <button key={idx} onClick={() => { setKeyword(g.keyword); handleSearchWithKeyword(g.keyword); }} className="flex-shrink-0 min-w-[240px] bg-white border-2 border-slate-200 hover:border-amber-400/50 p-3.5 rounded-[24px] flex items-center justify-between transition-all group active:scale-95 shadow-sm">
-                       <div className="text-left flex-1 pr-3">
-                          <p className="text-sm font-black text-slate-800 group-hover:text-amber-400 transition-colors uppercase whitespace-nowrap">{g.keyword}</p>
-                          <p className="text-[9px] text-slate-500 font-bold mt-0.5 tracking-tight whitespace-nowrap">{g.category}</p>
+                    <button key={idx} onClick={() => { setKeyword(g.keyword); handleSearchWithKeyword(g.keyword); }} className="flex-shrink-0 min-w-[280px] max-w-[320px] bg-white border-2 border-slate-200 hover:border-amber-400/50 p-4 rounded-[24px] flex items-center justify-between transition-all group active:scale-95 shadow-sm">
+                       <div className="text-left flex-1 pr-4 overflow-hidden">
+                          <p className="text-sm font-black text-slate-800 group-hover:text-amber-400 transition-colors uppercase truncate">{g.keyword}</p>
+                          <p className="text-[9px] text-slate-500 font-bold mt-0.5 tracking-tight truncate">{g.category}</p>
                        </div>
                        <div className="flex flex-col items-end ml-3 flex-shrink-0">
                           <span className="text-[9px] font-black text-amber-500">{g.hotIndex}%</span>
                           <div className="w-7 h-1 bg-slate-200 rounded-full mt-1 overflow-hidden"><div className="h-full bg-amber-500" style={{ width: `${g.hotIndex}%` }} /></div>
                        </div>
                     </button>
-                 )) : [1,2,3,4,5,6].map(i => <div key={i} className="w-[240px] h-14 bg-slate-100 animate-pulse rounded-[24px]" />)}
+                 )) : [1,2,3,4,5,6].map(i => <div key={i} className="w-[280px] h-16 bg-slate-100 animate-pulse rounded-[24px]" />)}
               </div>
         </motion.div>
 
