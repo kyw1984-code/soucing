@@ -98,12 +98,10 @@ export async function GET(request: NextRequest) {
     let finalResult = filterAndScoreProducts(coupangData, minPrice, maxPrice);
 
     // 5. CLEAN IMAGE URLS for 1688 Search Stability (ads-partners → 실제 CDN URL 해소)
-    const resolvedImages = await Promise.all(
-      finalResult.map(p => resolveImageUrl(cleanCoupangImageUrl(p.productImage, p.productId)))
-    );
-    finalResult = finalResult.map((product, i) => ({
+    // 이미 CDN URL인 경우 불필요한 네트워크 요청 생략
+    finalResult = finalResult.map((product) => ({
       ...product,
-      productImage: resolvedImages[i],
+      productImage: cleanCoupangImageUrl(product.productImage, product.productId),
     }));
     
     if (finalResult.length === 0) {
@@ -256,31 +254,38 @@ async function fetchByKeyword(keyword: string): Promise<any[]> {
 }
 
 /**
- * 키워드 변형을 만들어 2번 검색 후 productId 기준 중복 제거, 최대 20개 반환
+ * 키워드 변형을 만들어 여러 번 검색 후 productId 기준 중복 제거, 최소 30개 이상 확보
  */
 async function fetchCoupangProducts(keyword: string): Promise<any[]> {
-  // 변형 키워드: "텀블러" → "텀블러 추천"
-  const altKeyword = `${keyword} 추천`;
+  // 다양한 변형 키워드로 검색 범위 확대 (중복 제거로 30개 이상 확보)
+  const variations = [
+    keyword,
+    `${keyword} 추천`,
+    `${keyword} 인기`,
+    `${keyword} 베스트`
+  ];
 
-  const [main, alt] = await Promise.all([
-    fetchByKeyword(keyword),
-    fetchByKeyword(altKeyword),
-  ]);
+  // 병렬로 모든 변형 검색
+  const results = await Promise.all(
+    variations.map(kw => fetchByKeyword(kw))
+  );
 
   // productId 기준 중복 제거 (원본 키워드 결과 우선)
   const seen = new Set<number>();
   const combined: any[] = [];
-  for (const item of [...main, ...alt]) {
-    if (!seen.has(item.productId)) {
-      seen.add(item.productId);
-      combined.push(item);
+  for (const items of results) {
+    for (const item of items) {
+      if (item && item.productId && !seen.has(item.productId)) {
+        seen.add(item.productId);
+        combined.push(item);
+      }
     }
   }
 
   // rank 재부여
   combined.forEach((item, i) => { item.rank = i + 1; });
 
-  console.log(`[Coupang API] main=${main.length}, alt=${alt.length}, unique=${combined.length}`);
+  console.log(`[Coupang API] Total fetched: ${results.flat().length}, unique: ${combined.length}`);
   return combined;
 }
 
