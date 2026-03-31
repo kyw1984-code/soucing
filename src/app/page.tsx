@@ -134,7 +134,7 @@ interface Product {
   rating?: number;
   ratingCount?: number;
   isRocket?: boolean;
-  deliveryType?: "rocket" | "jet" | "general";
+  deliveryType?: "rocket" | "jet" | "general" | "rocket_fallback";
   calculated: {
     saleIndex: number;
     competitionStrength: number;
@@ -151,7 +151,7 @@ const SellerLandscape = ({ products }: { products: Product[] }) => {
   const topProducts = products.slice(0, total);
 
   const rocket = topProducts.filter(
-    (p) => p.deliveryType === "rocket" || (p.isRocket && !p.deliveryType),
+    (p) => p.deliveryType === "rocket" || p.deliveryType === "rocket_fallback" || (p.isRocket && !p.deliveryType),
   ).length;
   const jet = topProducts.filter((p) => p.deliveryType === "jet").length;
   const general = topProducts.filter(
@@ -1171,6 +1171,11 @@ export default function SourcingDashboard() {
                         {product.deliveryType === "rocket" && (
                           <div className="px-2 py-0.5 bg-rose-500 text-white text-[8px] font-black rounded uppercase shadow-sm">
                             로켓
+                          </div>
+                        )}
+                        {product.deliveryType === "rocket_fallback" && (
+                          <div className="px-2 py-0.5 bg-indigo-500 text-white text-[8px] font-black rounded uppercase shadow-sm">
+                            로켓/판매자
                           </div>
                         )}
                         {product.deliveryType === "jet" && (

@@ -360,20 +360,20 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
     // 배송 유형 (판매자로켓/그로스 분리)
     let explicitDelivery = item.deliveryType;
     if (!explicitDelivery && isRocket) {
-      // API 폴백 시 구분이 불가하므로 실제 데이터에 가깝게 로켓으로 통일 (유저 혼동 방지)
-      explicitDelivery = 'rocket';
+      // API 폴백 시 구분이 불가하므로 통합 표기 (UI에서 로켓/제트 등으로 표기)
+      explicitDelivery = 'rocket_fallback';
     } else if (!explicitDelivery) {
       explicitDelivery = 'general';
     }
     const deliveryType = explicitDelivery;
 
     // 판매지수: 노출순위 + 가격 구간 + 배송 유형
-    const deliverySaleBonus = deliveryType === 'rocket' ? 12 : deliveryType === 'jet' ? 8 : 0;
+    const deliverySaleBonus = (deliveryType === 'rocket' || deliveryType === 'rocket_fallback') ? 12 : deliveryType === 'jet' ? 8 : 0;
     const saleIndex = Math.min(120, rankScore + priceRangeScore + deliverySaleBonus);
 
     // 경쟁강도: 저가 + 배송유형 + 리뷰수 + 평점 (높을수록 진입 어려움)
     let baseComp = (price < 15000 ? 45 : price < 35000 ? 35 : price < 80000 ? 25 : 15);
-    let deliveryComp = deliveryType === 'rocket' ? 25 : deliveryType === 'jet' ? 15 : 0;
+    let deliveryComp = (deliveryType === 'rocket' || deliveryType === 'rocket_fallback') ? 25 : deliveryType === 'jet' ? 15 : 0;
     
     // 리뷰 수에 따른 심각한 페널티 (Coupang의 핵심 경쟁 지표)
     let reviewComp = 0;
