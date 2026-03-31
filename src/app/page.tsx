@@ -896,20 +896,21 @@ export default function SourcingDashboard() {
                 카테고리
               </span>
             </div>
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide flex-nowrap min-w-0 pr-10">
-               {CATEGORIES.map((cat) => (
-                <div key={cat.label} className="relative group/cat shrink-0">
-                  <button
-                    onClick={() =>
-                      setExpandedCategory(
-                        expandedCategory === cat.label ? null : cat.label,
-                      )
-                    }
-                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${expandedCategory === cat.label ? "bg-indigo-600 text-white shadow-md" : "bg-slate-50 hover:bg-slate-100 text-slate-600"}`}
-                  >
-                    <cat.icon className="w-3.5 h-3.5" />
-                    {cat.label}
-                  </button>
+            <div className="flex-1 overflow-x-auto scrollbar-hide flex items-center pr-10">
+              <div className="flex gap-2 flex-nowrap min-w-max">
+                {CATEGORIES.map((cat) => (
+                  <div key={cat.label} className="relative group/cat shrink-0">
+                    <button
+                      onClick={() =>
+                        setExpandedCategory(
+                          expandedCategory === cat.label ? null : cat.label,
+                        )
+                      }
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${expandedCategory === cat.label ? "bg-indigo-600 text-white shadow-md" : "bg-slate-50 hover:bg-slate-100 text-slate-600"}`}
+                    >
+                      <cat.icon className="w-3.5 h-3.5" />
+                      <span>{cat.label}</span>
+                    </button>
                   <AnimatePresence>
                     {expandedCategory === cat.label && (
                       <>
@@ -981,8 +982,10 @@ export default function SourcingDashboard() {
                       </>
                     )}
                   </AnimatePresence>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
             </div>
           </div>
 
@@ -1174,6 +1177,11 @@ export default function SourcingDashboard() {
                         {product.deliveryType === "jet" && (
                           <div className="px-2 py-0.5 bg-amber-500 text-white text-[8px] font-black rounded uppercase shadow-sm">
                             판매자로켓
+                          </div>
+                        )}
+                        {(product.deliveryType === "general" || !product.deliveryType) && (
+                          <div className="px-2 py-0.5 bg-slate-400 text-white text-[8px] font-black rounded uppercase shadow-sm">
+                            일반배송
                           </div>
                         )}
                       </div>
