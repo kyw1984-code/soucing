@@ -987,46 +987,45 @@ export default function SourcingDashboard() {
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white rounded-[32px] p-4 border-2 border-indigo-100 shadow-xl flex items-center gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                placeholder="공략할 상품 키워드를 입력하세요..."
-                className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl outline-none text-sm font-bold shadow-inner focus:ring-2 ring-indigo-500/20 transition-all text-slate-900"
-              />
-            </div>
-            <button
-              onClick={() => handleSearch()}
-              disabled={loading}
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl flex items-center gap-2 transition-all shadow-lg active:scale-95"
-            >
-              {loading ? (
-                <Loader2 className="animate-spin w-5 h-5" />
-              ) : (
-                <Search className="w-5 h-5" />
-              )}
-              소싱 제품 찾기
-            </button>
-
-            {!loading && products.length > 0 && (
+            <div className="bg-white rounded-[32px] p-4 border-2 border-indigo-100 shadow-xl flex items-center gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                <input
+                  type="text"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  placeholder="공략할 상품 키워드를 입력하세요..."
+                  className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-300 rounded-2xl outline-none text-sm font-bold shadow-inner focus:ring-2 ring-indigo-500/20 transition-all text-slate-900"
+                />
+              </div>
               <button
-                onClick={handleExportCSV}
-                className="p-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl transition-all shadow-lg active:scale-95"
-                title="엑셀로 저장"
+                onClick={() => handleSearch()}
+                disabled={loading}
+                className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-2xl flex items-center gap-2 transition-all shadow-lg active:scale-95"
               >
-                <Download className="w-5 h-5" />
+                {loading ? (
+                  <Loader2 className="animate-spin w-5 h-5" />
+                ) : (
+                  <Search className="w-5 h-5" />
+                )}
+                소싱 제품 찾기
               </button>
-            )}
-          </div>
-        </div>
 
-        <AnimatePresence>
+              {!loading && products.length > 0 && (
+                <button
+                  onClick={handleExportCSV}
+                  className="p-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl transition-all shadow-lg active:scale-95"
+                  title="엑셀로 저장"
+                >
+                  <Download className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          <AnimatePresence>
           {!loading && keywordStats && products.length > 0 && (
             <motion.div
               initial={{ height: 0, opacity: 0 }}
