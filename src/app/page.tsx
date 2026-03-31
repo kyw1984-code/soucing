@@ -255,7 +255,7 @@ export default function SourcingDashboard() {
     "sourcingScore" | "saleIndex" | "competitionStrength" | "productPrice"
   >("sourcingScore");
   const [gradeFilter, setGradeFilter] = useState<
-    "all" | "Excellent" | "Good" | "Fair" | "Bad"
+    "all" | "Great" | "Excellent" | "Good" | "Bad"
   >("all");
   const [compareList, setCompareList] = useState<Product[]>([]);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
@@ -800,12 +800,12 @@ export default function SourcingDashboard() {
     }
   };
 
-  const getGradeStyle = (grade: "Excellent" | "Good" | "Fair" | "Bad") => {
-    if (grade === "Excellent")
+  const getGradeStyle = (grade: "Great" | "Excellent" | "Good" | "Bad") => {
+    if (grade === "Great")
       return "text-emerald-400 bg-emerald-50 ring-emerald-500/20";
-    if (grade === "Good")
+    if (grade === "Excellent")
       return "text-indigo-400 bg-indigo-50 ring-indigo-500/20";
-    if (grade === "Fair") return "text-amber-400 bg-amber-50 ring-amber-500/20";
+    if (grade === "Good") return "text-amber-400 bg-amber-50 ring-amber-500/20";
     return "text-rose-400 bg-rose-50 ring-rose-500/20";
   };
 
@@ -896,8 +896,8 @@ export default function SourcingDashboard() {
                 카테고리
               </span>
             </div>
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-              {CATEGORIES.map((cat) => (
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide flex-nowrap min-w-0 pr-10">
+               {CATEGORIES.map((cat) => (
                 <div key={cat.label} className="relative group/cat shrink-0">
                   <button
                     onClick={() =>
@@ -1121,11 +1121,11 @@ export default function SourcingDashboard() {
         {!loading && products.length > 0 && (
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
-              {(["all", "Excellent", "Good", "Fair", "Bad"] as const).map(
+              {(["all", "Great", "Excellent", "Good", "Bad"] as const).map(
                 (g) => (
                   <button
                     key={g}
-                    onClick={() => setGradeFilter(g)}
+                    onClick={() => setGradeFilter(g as any)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold ${gradeFilter === g ? "bg-slate-800 text-white" : "text-slate-500"}`}
                   >
                     {g}

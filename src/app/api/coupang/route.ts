@@ -402,10 +402,10 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
     opportunityScore = Math.max(5, opportunityScore);
     
     // Balanced Grade Logic (Goldilocks Range)
-    let grade: 'Excellent' | 'Good' | 'Fair' | 'Bad' = 'Bad';
-    if (opportunityScore >= 80) grade = 'Excellent';      // 85 -> 80
-    else if (opportunityScore >= 65) grade = 'Good';       // 70 -> 65
-    else if (opportunityScore >= 45) grade = 'Fair';       // 50 -> 45
+    let grade: 'Great' | 'Excellent' | 'Good' | 'Bad' = 'Bad';
+    if (opportunityScore >= 75) grade = 'Great';
+    else if (opportunityScore >= 60) grade = 'Excellent';
+    else if (opportunityScore >= 40) grade = 'Good';
     else grade = 'Bad';
 
     return {
