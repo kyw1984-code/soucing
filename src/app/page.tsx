@@ -150,29 +150,17 @@ const SellerLandscape = ({ products }: { products: Product[] }) => {
   const total = Math.min(products.length, 20); // Top 20 analysis
   const topProducts = products.slice(0, total);
 
-  const rocket = topProducts.filter(
+  const rocketCount = topProducts.filter(
     (p) => p.deliveryType === "rocket" || p.deliveryType === "rocket_fallback" || (p.isRocket && !p.deliveryType),
   ).length;
-  const jet = topProducts.filter((p) => p.deliveryType === "jet").length;
+  const jetCount = topProducts.filter((p) => p.deliveryType === "jet").length;
+  const rocketCombined = rocketCount + jetCount;
+  
   const general = topProducts.filter(
     (p) => p.deliveryType === "general" || (!p.isRocket && !p.deliveryType),
   ).length;
 
-  // 디버그 로그
-  console.log("[SellerLandscape] 상품 배송 타입 분석:", {
-    total,
-    rocket,
-    jet,
-    general,
-    sample: topProducts.slice(0, 3).map((p) => ({
-      name: p.productName.substring(0, 20),
-      deliveryType: p.deliveryType,
-      isRocket: p.isRocket,
-    })),
-  });
-
-  const rocketPct = (rocket / total) * 100;
-  const jetPct = (jet / total) * 100;
+  const rocketCombinedPct = (rocketCombined / total) * 100;
   const generalPct = (general / total) * 100;
 
   return (
@@ -185,14 +173,9 @@ const SellerLandscape = ({ products }: { products: Product[] }) => {
 
       <div className="flex h-3 w-full rounded-full overflow-hidden bg-slate-200">
         <div
-          style={{ width: `${rocketPct}%` }}
+          style={{ width: `${rocketCombinedPct}%` }}
           className="h-full bg-rose-500 transition-all duration-500"
-          title={`로켓: ${rocket}`}
-        />
-        <div
-          style={{ width: `${jetPct}%` }}
-          className="h-full bg-amber-500 transition-all duration-500"
-          title={`판매자로켓: ${jet}`}
+          title={`로켓/판매자로켓: ${rocketCombined}`}
         />
         <div
           style={{ width: `${generalPct}%` }}
@@ -201,28 +184,20 @@ const SellerLandscape = ({ products }: { products: Product[] }) => {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col">
           <span className="text-[9px] font-black text-rose-400 uppercase">
-            로켓
+            로켓 / 판매자로켓
           </span>
-          <span className="text-sm font-black text-slate-800">
-            {Math.round(rocketPct)}%
-          </span>
-        </div>
-        <div className="flex flex-col">
-          <span className="text-[9px] font-black text-amber-400 uppercase">
-            판매자로켓
-          </span>
-          <span className="text-sm font-black text-slate-800">
-            {Math.round(jetPct)}%
+          <span className="text-xl font-black text-slate-800">
+            {Math.round(rocketCombinedPct)}%
           </span>
         </div>
-        <div className="flex flex-col border-l border-slate-300 pl-2">
+        <div className="flex flex-col border-l border-slate-300 pl-4">
           <span className="text-[9px] font-black text-emerald-400 uppercase">
             일반배송
           </span>
-          <span className="text-sm font-black text-slate-800">
+          <span className="text-xl font-black text-slate-800">
             {Math.round(generalPct)}%
           </span>
         </div>
