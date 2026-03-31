@@ -44,51 +44,46 @@ import { ProductSkeleton } from "@/components/Skeleton";
 const Sparkline = ({ data }: { data: number[] }) => {
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
 
-  if (!data || data.length === 0) return null;
+  if (!data || data.length === 0) return (
+    <div className="h-48 flex items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50">
+      <p className="text-[10px] font-bold text-slate-400">데이터를 불러올 수 없습니다</p>
+    </div>
+  );
   const max = Math.max(...data);
   const min = Math.min(...data);
   const range = max - min || 1;
 
   const months = [
-    "1월",
-    "2월",
-    "3월",
-    "4월",
-    "5월",
-    "6월",
-    "7월",
-    "8월",
-    "9월",
-    "10월",
-    "11월",
-    "12월",
+    "1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월",
   ];
 
   return (
-    <div className="w-full flex flex-col gap-3">
-      <div className="flex items-end gap-1.5 h-48 relative">
+    <div className="w-full flex flex-col gap-4">
+      <div className="flex items-end gap-2 h-44 relative px-2">
         {data.map((val, i) => {
-          const heightPercent = ((val - min) / range) * 100;
+          // Adjust height calculation to be more visible:
+          // Use 15% as floor instead of relative zero for better visibility
+          const heightPercent = 15 + ((val - min) / range) * 85;
           return (
             <div
               key={i}
-              className="flex-1 relative group cursor-pointer"
+              className="flex-1 relative group"
               onMouseEnter={() => setHoveredIndex(i)}
               onMouseLeave={() => setHoveredIndex(null)}
             >
               <div
-                className="w-full bg-gradient-to-t from-amber-500 to-amber-400 rounded-t-sm transition-all duration-300 hover:from-amber-600 hover:to-amber-500 relative"
-                style={{ height: `${Math.max(heightPercent, 5)}%` }}
+                className={`w-full rounded-t-[6px] transition-all duration-300 relative ${hoveredIndex === i ? "bg-amber-500" : "bg-slate-200"}`}
+                style={{ height: `${heightPercent}%` }}
               >
                 {hoveredIndex === i && (
-                  <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-3 py-2 rounded-lg text-xs font-bold whitespace-nowrap shadow-xl z-10">
+                  <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-800 text-white px-3 py-2.5 rounded-xl text-xs font-black whitespace-nowrap shadow-2xl z-50 animate-in fade-in zoom-in duration-200">
                     <div className="text-center">
-                      <div className="text-[10px] text-slate-300">
+                      <div className="text-[9px] text-amber-500 font-black mb-0.5">
                         {months[i]}
                       </div>
-                      <div className="text-sm">{val.toLocaleString()}</div>
+                      <div className="text-sm font-black tabular-nums">{val.toLocaleString()}건</div>
                     </div>
-                    <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-900 rotate-45"></div>
+                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900 border-r border-b border-slate-800 rotate-45" />
                   </div>
                 )}
               </div>
@@ -96,18 +91,18 @@ const Sparkline = ({ data }: { data: number[] }) => {
           );
         })}
       </div>
-      <div className="flex justify-between px-0.5 border-t border-slate-200 pt-2">
+      <div className="flex justify-between px-2 pt-3 border-t border-slate-100">
         {months.map((m, i) => (
           <span
             key={i}
-            className="text-[8px] font-bold text-slate-400 tabular-nums"
+            className={`text-[9px] font-black tabular-nums transition-colors ${hoveredIndex === i ? "text-amber-500" : "text-slate-400"}`}
           >
             {i + 1}
           </span>
         ))}
       </div>
-      <p className="text-[9px] font-black text-slate-500 text-center uppercase tracking-widest">
-        월간 검색량 추이 (1월 - 12월)
+      <p className="text-[10px] font-black text-slate-400 text-center uppercase tracking-widest mt-1">
+        Monthly Search Volume Analytics (Jan - Dec)
       </p>
     </div>
   );
@@ -1033,13 +1028,13 @@ export default function SourcingDashboard() {
 
         <div className="flex-1 overflow-y-auto pb-10 scrollbar-hide">
           {loading ? (
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-4 gap-6">
               {Array.from({ length: 9 }).map((_, i) => (
                 <ProductSkeleton key={i} />
               ))}
             </div>
           ) : products.length > 0 ? (
-            <div className="grid grid-cols-3 gap-6">
+            <div className="grid grid-cols-4 gap-6">
               <AnimatePresence>
                 {displayProducts.map((product, index) => (
                   <motion.div

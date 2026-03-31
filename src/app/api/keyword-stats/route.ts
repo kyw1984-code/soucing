@@ -85,11 +85,57 @@ export async function GET(request: Request) {
   const minPrice = Math.floor(baseAvgPrice * (0.6 + (hash % 10) * 0.02));
   const maxPrice = Math.floor(baseAvgPrice * (1.8 + (hash % 10) * 0.05));
 
-  // 6. TREND DATA (Seasonality)
-  const trendData = Array.from({ length: 12 }, (_, i) => {
-    const monthHash = Math.sin((hash + i) * 0.5) * 0.3 + 1;
-    return Math.floor(searchVolume * monthHash * 0.8);
-  });
+  // 6. TREND DATA (Naver API Integration)
+  let trendData: number[] = [];
+  const NAVER_ID = process.env.NAVER_CLIENT_ID;
+  const NAVER_SECRET = process.env.NAVER_CLIENT_SECRET;
+
+  if (NAVER_ID && NAVER_SECRET) {
+    try {
+      const today = new Date();
+      const lastYear = new Date();
+      lastYear.setFullYear(today.getFullYear() - 1);
+      
+      const startDate = lastYear.toISOString().split('T')[0];
+      const endDate = today.toISOString().split('T')[0];
+
+      const naverRes = await fetch('https://openapi.naver.com/v1/datalab/search', {
+        method: 'POST',
+        headers: {
+          'X-Naver-Client-Id': NAVER_ID,
+          'X-Naver-Client-Secret': NAVER_SECRET,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          startDate,
+          endDate,
+          timeUnit: 'month',
+          keywordGroups: [{ groupName: keyword, keywords: [keyword] }],
+        }),
+      });
+
+      if (naverRes.ok) {
+        const naverData = await naverRes.json();
+        const results = naverData.results?.[0]?.data || [];
+        // Map relative volume (0-100) to absolute searchVolume
+        trendData = results.map((d: any) => Math.floor(searchVolume * (d.ratio / 100)));
+        
+        // Fill up to 12 months if needed
+        while (trendData.length < 12) trendData.unshift(Math.floor(searchVolume * 0.5));
+        if (trendData.length > 12) trendData = trendData.slice(-12);
+      }
+    } catch (e) {
+      console.error('[Naver API Error]', e);
+    }
+  }
+
+  // Fallback to Mock Trend Data if API fails or keys missing
+  if (trendData.length === 0) {
+    trendData = Array.from({ length: 12 }, (_, i) => {
+      const monthHash = Math.sin((hash + i) * 0.5) * 0.3 + 1;
+      return Math.floor(searchVolume * monthHash * 0.8);
+    });
+  }
   
   const currentTrend = trendData[11] > trendData[10] ? 'Rising' : 'Steady';
   const marketTrend = searchVolume > 30000 ? 'Volume Burst' : (grade === 'Excellent' ? 'Niche Gold' : 'Steady Growth');
