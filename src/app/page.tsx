@@ -864,24 +864,24 @@ export default function SourcingDashboard() {
 
         {/* Global Control Bar */}
         <div className="sticky top-[64px] z-30 flex flex-col gap-4 bg-white/80 backdrop-blur-md pb-4 pt-2">
-          <div className="bg-white rounded-[28px] p-3 border border-slate-200 shadow-sm overflow-hidden flex items-center gap-4">
-            <div className="flex items-center gap-2 px-3 border-r border-slate-200 pr-6 shrink-0">
+          <div className="bg-white rounded-[32px] p-5 border border-slate-200 shadow-sm flex items-start gap-6">
+            <div className="flex items-center gap-2 px-3 border-r border-slate-200 pr-6 shrink-0 mt-2.5">
               <Sparkles className="w-4 h-4 text-emerald-500" />
               <span className="text-[11px] font-black uppercase tracking-widest text-slate-500">
                 카테고리
               </span>
             </div>
-            <div className="flex-1 overflow-x-auto scrollbar-hide flex items-center pr-4">
-              <div className="flex gap-2 flex-nowrap min-w-max items-center">
+            <div className="flex-1 py-1">
+              <div className="flex gap-2.5 flex-wrap items-center">
                 {CATEGORIES.map((cat) => (
-                  <div key={cat.label} className="relative group/cat shrink-0">
+                  <div key={cat.label} className="relative group/cat">
                     <button
                       onClick={() =>
                         setExpandedCategory(
                           expandedCategory === cat.label ? null : cat.label,
                         )
                       }
-                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${expandedCategory === cat.label ? "bg-indigo-600 text-white shadow-md shadow-indigo-200" : "bg-slate-50 hover:bg-indigo-50/80 text-slate-600"}`}
+                      className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${expandedCategory === cat.label ? "bg-indigo-600 text-white shadow-indigo-200" : "bg-slate-50 hover:bg-indigo-50/80 text-slate-600 border border-slate-100"}`}
                     >
                       <cat.icon className="w-3.5 h-3.5" />
                       <span>{cat.label}</span>
@@ -959,8 +959,6 @@ export default function SourcingDashboard() {
                   </AnimatePresence>
                 </div>
               ))}
-              {/* Spacer to prevent clipping on the right edge */}
-              <div className="w-24 shrink-0 pointer-events-none" />
             </div>
           </div>
         </div>
