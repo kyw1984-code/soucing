@@ -103,7 +103,7 @@ export async function scrapeCoupangSearch(keyword: string, cookie: string) {
         const countStr = countElement?.textContent?.trim()?.replace(/[^0-9]/g, '') || '0';
         
         const isRocket = !!item.querySelector('.badge.rocket, .rocket-badge, .badge-rocket-delivery, .rocket-badge-img, .sdp-badge-rocket, img[alt*="로켓배송"], img[src*="rocket"]');
-        const isJet = !!item.querySelector('.badge.jet-delivery, .jet-badge, .badge-jet, .fbl-badge, img[alt*="판매자로켓"], img[alt*="제트배송"], img[alt*="그로스"], [class*="seller-rocket"], [class*="growth"], [class*="jet-"], img[src*="growth"]');
+        const isJet = !!item.querySelector('.badge.jet-delivery, .jet-badge, .badge-jet, .fbl-badge, img[alt*="판매자로켓"], img[alt*="제트배송"], img[alt*="그로스"], [class*="seller-rocket"], [class*="growth"], [class*="jet-"], img[src*="growth"], [class*="rock-rocket-badge"]');
         
         // Prioritize isJet because jet is a subset of rocket and might match both selectors
         const deliveryType = isJet ? 'jet' : isRocket ? 'rocket' : 'general';

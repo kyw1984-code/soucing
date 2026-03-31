@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     // Use raw coupangData directly.
     
     // 4. Scored and Filtered
-    let finalResult = filterAndScoreProducts(coupangData, minPrice, maxPrice);
+    let finalResult = filterAndScoreProducts(coupangData, minPrice, maxPrice, keyword);
 
     // 5. CLEAN IMAGE URLS for 1688 Search Stability (ads-partners → 실제 CDN URL 해소)
     // 이미 CDN URL인 경우 불필요한 네트워크 요청 생략
@@ -298,15 +298,43 @@ async function fetchCoupangProducts(keyword: string): Promise<any[]> {
 /**
  * Data filtering and scoring logic
  */
-function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number) {
+function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number, searchKeyword: string = '') {
   console.log(`[Filter] Starting with ${items.length} items`);
+
+  // Keywords that often appear as noise in unrelated searches (exclude them if they don't match the search)
+  const noiseKeywords = ['글루타치온', '영양제', '비타민', '유산균', '콜라겐', '영양가득'];
+  const searchWords = (searchKeyword || '').split(' ').filter(w => w.length >= 2);
 
   const filtered = items.filter((item) => {
     if (!item || typeof item !== 'object') return false;
+    
     const price = item.productPrice || 0;
-    const passes = price >= minPrice && price <= maxPrice;
-    if (!passes) console.log(`[Filter] Filtered out: ${item.productName?.substring(0, 30)} (Price: ${price})`);
-    return passes;
+    const name = (item.productName || '').toLowerCase();
+    
+    // 1. Price Filter
+    if (price < minPrice || price > maxPrice) return false;
+
+    // 2. Relevancy Filter (Keyword matching)
+    // If the name contains noise keywords but the search doesn't, filter it out
+    const containsNoise = noiseKeywords.some(noise => name.includes(noise));
+    const searchHasNoise = noiseKeywords.some(noise => searchKeyword.toLowerCase().includes(noise));
+    
+    if (containsNoise && !searchHasNoise) {
+      console.log(`[Filter] Removed irrelevant item (Noise): ${item.productName}`);
+      return false;
+    }
+
+    // 3. Optional: Minimum word match (At least one significant word from search should appear)
+    if (searchWords.length > 0) {
+      const matchCount = searchWords.filter(word => name.includes(word.toLowerCase())).length;
+      if (matchCount === 0 && searchWords.length >= 2) {
+        // If we have multi-word search and zero matches, it's likely a weird recommendation/ad
+        console.log(`[Filter] Removed irrelevant item (No Match): ${item.productName}`);
+        return false;
+      }
+    }
+
+    return true;
   });
 
   console.log(`[Filter] ${filtered.length} items passed filter`);
