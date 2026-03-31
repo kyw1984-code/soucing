@@ -44,25 +44,23 @@ import { ProductSkeleton } from "@/components/Skeleton";
 const Sparkline = ({ data }: { data: number[] }) => {
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
 
-  if (!data || data.length === 0) return (
-    <div className="h-48 flex items-center justify-center border border-dashed border-slate-200 rounded-2xl bg-slate-50">
-      <p className="text-[10px] font-bold text-slate-400">데이터를 불러올 수 없습니다</p>
-    </div>
-  );
-  const max = Math.max(...data);
-  const min = Math.min(...data);
+  // 데이터 안전성 검사
+  const safeData = React.useMemo(() => {
+    if (!data || !Array.isArray(data) || data.length === 0) return Array.from({ length: 12 }, () => 0);
+    return data.map(v => (typeof v === 'number' && !isNaN(v)) ? v : 0);
+  }, [data]);
+
+  const max = Math.max(...safeData, 1);
+  const min = Math.min(...safeData);
   const range = max - min || 1;
 
-  const months = [
-    "1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월",
-  ];
+  const months = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
 
   return (
     <div className="w-full flex flex-col gap-4">
-      <div className="flex items-end gap-2 h-44 relative px-2">
-        {data.map((val, i) => {
-          // Adjust height calculation to be more visible:
-          // Use 15% as floor instead of relative zero for better visibility
+      <div className="flex items-end gap-2 h-40 relative px-1">
+        {safeData.map((val, i) => {
+          // 최소 높이 15% 보장, 최대 100%
           const heightPercent = 15 + ((val - min) / range) * 85;
           return (
             <div
@@ -72,18 +70,22 @@ const Sparkline = ({ data }: { data: number[] }) => {
               onMouseLeave={() => setHoveredIndex(null)}
             >
               <div
-                className={`w-full rounded-t-[6px] transition-all duration-300 relative ${hoveredIndex === i ? "bg-amber-500" : "bg-slate-200"}`}
+                className={`w-full rounded-t-[6px] transition-all duration-500 relative border-x border-t border-transparent ${
+                  hoveredIndex === i 
+                    ? "bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.3)]" 
+                    : "bg-indigo-500/20 group-hover:bg-indigo-500/40"
+                }`}
                 style={{ height: `${heightPercent}%` }}
               >
                 {hoveredIndex === i && (
-                  <div className="absolute -top-14 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-800 text-white px-3 py-2.5 rounded-xl text-xs font-black whitespace-nowrap shadow-2xl z-50 animate-in fade-in zoom-in duration-200">
+                  <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 text-white px-3 py-2.5 rounded-2xl text-xs font-black whitespace-nowrap shadow-2xl z-[100] animate-in fade-in zoom-in slide-in-from-bottom-2 duration-300">
                     <div className="text-center">
-                      <div className="text-[9px] text-amber-500 font-black mb-0.5">
-                        {months[i]}
+                      <div className="text-[10px] text-amber-400 font-black mb-0.5 uppercase tracking-tighter">
+                        {months[i]} 검색 트렌드
                       </div>
                       <div className="text-sm font-black tabular-nums">{val.toLocaleString()}건</div>
                     </div>
-                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900 border-r border-b border-slate-800 rotate-45" />
+                    <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-slate-900 border-r border-b border-slate-700 rotate-45" />
                   </div>
                 )}
               </div>
@@ -91,19 +93,24 @@ const Sparkline = ({ data }: { data: number[] }) => {
           );
         })}
       </div>
-      <div className="flex justify-between px-2 pt-3 border-t border-slate-100">
+      <div className="flex justify-between px-1 pt-3 border-t border-slate-100/50">
         {months.map((m, i) => (
           <span
             key={i}
-            className={`text-[9px] font-black tabular-nums transition-colors ${hoveredIndex === i ? "text-amber-500" : "text-slate-400"}`}
+            className={`text-[9px] font-black tabular-nums transition-colors duration-300 ${
+              hoveredIndex === i ? "text-indigo-600 scale-110" : "text-slate-400"
+            }`}
           >
             {i + 1}
           </span>
         ))}
       </div>
-      <p className="text-[10px] font-black text-slate-400 text-center uppercase tracking-widest mt-1">
-        Monthly Search Volume Analytics (Jan - Dec)
-      </p>
+      <div className="bg-indigo-50/50 rounded-xl py-2 px-3 flex items-center justify-center gap-2 mt-2">
+        <TrendingUp className="w-3 h-3 text-indigo-500" />
+        <p className="text-[10px] font-black text-indigo-600/70 uppercase tracking-[0.1em]">
+          Monthly Analytics (Jan - Dec Trend)
+        </p>
+      </div>
     </div>
   );
 };
@@ -1261,7 +1268,7 @@ export default function SourcingDashboard() {
             className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors text-sm font-bold text-slate-600"
           >
             <ExternalLink className="w-4 h-4" />
-            링크트리 홈페이지
+            쇼크트리 홈페이지
           </a>
           <a
             href="https://www.youtube.com/@saupsin89"
@@ -1270,7 +1277,16 @@ export default function SourcingDashboard() {
             className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors text-sm font-bold text-slate-600"
           >
             <ExternalLink className="w-4 h-4" />
-            링크트리 유튜브
+            쇼크트리 유튜브
+          </a>
+          <a
+            href="https://open.kakao.com/o/gninI2di"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl transition-colors text-sm font-bold text-rose-500 shadow-sm shadow-rose-100/50 ring-1 ring-rose-200/50"
+          >
+            <MessageSquare className="w-4 h-4" />
+            단톡방 입장하기
           </a>
         </div>
       </footer>
