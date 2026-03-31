@@ -871,8 +871,8 @@ export default function SourcingDashboard() {
                 카테고리
               </span>
             </div>
-            <div className="flex-1 overflow-x-auto scrollbar-hide flex items-center pr-10">
-              <div className="flex gap-2 flex-nowrap min-w-max">
+            <div className="flex-1 overflow-x-auto scrollbar-hide flex items-center">
+              <div className="flex gap-2 flex-nowrap min-w-max pr-12">
                 {CATEGORIES.map((cat) => (
                   <div key={cat.label} className="relative group/cat shrink-0">
                     <button
