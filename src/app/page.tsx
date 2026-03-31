@@ -921,10 +921,10 @@ export default function SourcingDashboard() {
                           className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm"
                         />
                         <motion.div
-                          initial={{ scale: 0.95, opacity: 0, y: 20 }}
-                          animate={{ scale: 1, opacity: 1, y: 0 }}
-                          exit={{ scale: 0.95, opacity: 0, y: 20 }}
-                          className="fixed top-[10%] left-1/2 -translate-x-1/2 z-50 w-[95%] max-w-[1400px] bg-white rounded-[48px] p-12 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.25)] border border-slate-200 ring-1 ring-slate-200/50 max-h-[85vh] overflow-y-auto custom-scrollbar"
+                          initial={{ scale: 0.95, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.95, opacity: 0 }}
+                          className="fixed inset-0 m-auto z-50 w-[95%] max-w-[1200px] h-fit max-h-[85vh] bg-white rounded-[48px] p-12 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.3)] border border-slate-200 overflow-y-auto"
                         >
                         <div className="flex items-center justify-between mb-10 pb-8 border-b border-slate-100">
                           <div className="flex items-center gap-4">
