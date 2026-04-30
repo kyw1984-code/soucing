@@ -1131,7 +1131,12 @@ export default function SourcingDashboard() {
                     transition={{ delay: index * 0.05 }}
                     className="group bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex flex-col"
                   >
-                    <div className="relative aspect-square overflow-hidden bg-slate-100">
+                    <a
+                      href={product.productUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="relative aspect-square overflow-hidden bg-slate-100 cursor-pointer block"
+                    >
                       <img
                         src={product.productImage}
                         alt={product.productName}
@@ -1164,7 +1169,7 @@ export default function SourcingDashboard() {
                           </div>
                         )}
                       </div>
-                    </div>
+                    </a>
 
                     <div className="p-5 flex-1 flex flex-col">
                       <h3 className="font-bold text-[14px] text-slate-900 line-clamp-2 mb-4 h-10 leading-snug">
@@ -1177,16 +1182,16 @@ export default function SourcingDashboard() {
                       </div>
 
                       <div className="flex flex-col gap-2 mt-auto">
+                        <a
+                          href={product.productUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full py-3 bg-gradient-to-r from-rose-500 to-orange-500 hover:from-rose-600 hover:to-orange-600 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                          쿠팡 바로가기
+                        </a>
                         <div className="flex gap-2">
-                          {/* <a
-                            href={product.productUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex-1 py-3 bg-slate-50 rounded-xl text-[11px] font-bold text-slate-600 flex items-center justify-center gap-2 hover:bg-slate-100 transition-colors"
-                          >
-                            <ExternalLink className="w-3 h-3" />
-                            링크
-                          </a> */}
                           <button
                             onClick={() => {
                               const imageUrl = product.productImage;
@@ -1231,7 +1236,7 @@ export default function SourcingDashboard() {
                               setIsDrawerOpen(true);
                               setWholesalePrice(0);
                             }}
-                            className="flex-[2] py-3 bg-slate-900 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors"
+                            className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors"
                           >
                             <LayoutDashboard className="w-3 h-3" />
                             소싱 분석
