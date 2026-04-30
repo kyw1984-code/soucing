@@ -1178,7 +1178,7 @@ export default function SourcingDashboard() {
 
                       <div className="flex flex-col gap-2 mt-auto">
                         <div className="flex gap-2">
-                          <a
+                          {/* <a
                             href={product.productUrl}
                             target="_blank"
                             rel="noopener noreferrer"
@@ -1186,7 +1186,45 @@ export default function SourcingDashboard() {
                           >
                             <ExternalLink className="w-3 h-3" />
                             링크
-                          </a>
+                          </a> */}
+                          <button
+                            onClick={() => {
+                              const imageUrl = product.productImage;
+
+                              if (!imageUrl) {
+                                alert("이미지 없음");
+                                return;
+                              }
+
+                              // form 생성
+                              const form = document.createElement("form");
+                              form.method = "POST";
+                              form.action = "https://jungdari.com/search1688/image/string";
+                              form.target = "_blank"; // 새창
+
+                              // source
+                              const sourceInput = document.createElement("input");
+                              sourceInput.type = "hidden";
+                              sourceInput.name = "source";
+                              sourceInput.value = imageUrl;
+
+                              // beginPage
+                              const pageInput = document.createElement("input");
+                              pageInput.type = "hidden";
+                              pageInput.name = "beginPage";
+                              pageInput.value = "1";
+
+                              form.appendChild(sourceInput);
+                              form.appendChild(pageInput);
+
+                              document.body.appendChild(form);
+                              form.submit();
+                              document.body.removeChild(form);
+                            }}
+                            className="flex-1 py-3 bg-blue-50 rounded-xl text-[11px] font-bold text-blue-600 flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors"
+                          >
+                            구매하기
+                          </button>
                           <button
                             onClick={() => {
                               setSelectedProduct(product);
