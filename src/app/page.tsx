@@ -135,6 +135,7 @@ interface Product {
   ratingCount?: number;
   isRocket?: boolean;
   deliveryType?: "rocket" | "jet" | "general" | "rocket_fallback";
+  estimated1688Price?: number; // 위안화 예상 원가
   calculated: {
     saleIndex: number;
     competitionStrength: number;
@@ -740,7 +741,16 @@ export default function SourcingDashboard() {
         setKeywordStats(null);
         return;
       }
-      setProducts(data);
+
+      // 1688 가격 초기화 (로컬스토리지에서 불러오거나 자동 추정)
+      const savedPrices = JSON.parse(localStorage.getItem('1688prices') || '{}');
+      const enrichedData = data.map((product: Product) => {
+        const saved = savedPrices[product.productId];
+        const estimated = saved || Math.round(product.productPrice / sourcingMultiplier);
+        return { ...product, estimated1688Price: estimated };
+      });
+
+      setProducts(enrichedData);
 
       const total = Math.min(data.length, 20);
       const topProducts = data.slice(0, total);
@@ -1175,10 +1185,37 @@ export default function SourcingDashboard() {
                       <h3 className="font-bold text-[14px] text-slate-900 line-clamp-2 mb-4 h-10 leading-snug">
                         {product.productName}
                       </h3>
-                      <div className="flex justify-between items-center mb-4">
-                        <span className="text-lg font-black text-indigo-600">
-                          {product.productPrice.toLocaleString()}원
-                        </span>
+                      <div className="flex flex-col gap-1.5 mb-4">
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-black text-indigo-600">
+                            {product.productPrice.toLocaleString()}원
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-slate-400 font-bold">
+                            예상 1688원가:
+                          </span>
+                          <input
+                            type="number"
+                            value={product.estimated1688Price || ''}
+                            onChange={(e) => {
+                              const newPrice = Number(e.target.value);
+                              // 상품 목록 업데이트
+                              setProducts(prev => prev.map(p =>
+                                p.productId === product.productId
+                                  ? { ...p, estimated1688Price: newPrice }
+                                  : p
+                              ));
+                              // 로컬스토리지 저장
+                              const saved = JSON.parse(localStorage.getItem('1688prices') || '{}');
+                              saved[product.productId] = newPrice;
+                              localStorage.setItem('1688prices', JSON.stringify(saved));
+                            }}
+                            className="w-16 px-2 py-0.5 text-[11px] font-bold text-amber-600 bg-amber-50 border border-amber-200 rounded-md outline-none focus:ring-1 ring-amber-400"
+                            placeholder="0"
+                          />
+                          <span className="text-[10px] text-amber-600 font-black">¥</span>
+                        </div>
                       </div>
 
                       <div className="flex flex-col gap-2 mt-auto">
@@ -1234,7 +1271,9 @@ export default function SourcingDashboard() {
                             onClick={() => {
                               setSelectedProduct(product);
                               setIsDrawerOpen(true);
-                              setWholesalePrice(0);
+                              // 1688 가격이 있으면 자동으로 원가 계산
+                              const price1688 = product.estimated1688Price || 0;
+                              setWholesalePrice(Math.round(price1688 * sourcingMultiplier));
                             }}
                             className="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[11px] font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-colors"
                           >
@@ -1318,6 +1357,7 @@ export default function SourcingDashboard() {
                         <input
                           type="number"
                           placeholder="예: 25.5"
+                          defaultValue={selectedProduct.estimated1688Price || ''}
                           onChange={(e) =>
                             setWholesalePrice(
                               Math.round(
@@ -1325,7 +1365,7 @@ export default function SourcingDashboard() {
                               ),
                             )
                           }
-                          className="text-center w-full px-4 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-bold outline-none"
+                          className="text-center w-full px-4 py-4 bg-amber-50 border border-amber-200 rounded-2xl text-sm font-bold outline-none focus:ring-2 ring-amber-400"
                         />
                       </div>
                       <div>
