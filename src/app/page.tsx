@@ -735,8 +735,16 @@ export default function SourcingDashboard() {
       const query = new URLSearchParams({ keyword: kw, minPrice, maxPrice });
       const response = await fetch(`/api/coupang?${query.toString()}`);
       const data = await response.json();
+
+      // 디버그 정보 콘솔에 출력
+      if (data.debug) {
+        console.log('[Debug Info]', data.debug);
+      }
+
       if (!response.ok || data.error) {
-        setSearchError({ message: data.error || "검색 실패" });
+        const errorMsg = data.error || "검색 실패";
+        const debugInfo = data.debug ? ` (${JSON.stringify(data.debug)})` : '';
+        setSearchError({ message: errorMsg + debugInfo });
         setProducts([]);
         setKeywordStats(null);
         return;

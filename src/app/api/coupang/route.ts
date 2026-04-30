@@ -94,6 +94,21 @@ export async function GET(request: NextRequest) {
     // 3. (REMOVED) Enrichment moved to on-demand sourcing analysis to speed up initial response.
     // Use raw coupangData directly.
     
+    // 디버깅: 데이터가 있는지 먼저 확인
+    console.log(`[Coupang API Handler] Raw data count: ${coupangData.length}`);
+
+    if (coupangData.length === 0) {
+      console.error(`[Coupang API Handler] No data from API!`);
+      return NextResponse.json({
+        error: 'API에서 데이터를 가져오지 못했습니다. 쿠팡 API 상태를 확인해주세요.',
+        debug: {
+          keyword,
+          apiDataCount: 0,
+          message: 'Both scraper and API returned 0 results'
+        }
+      }, { status: 500 });
+    }
+
     // 4. Scored and Filtered
     let finalResult = filterAndScoreProducts(coupangData, minPrice, maxPrice, keyword);
 
@@ -103,14 +118,18 @@ export async function GET(request: NextRequest) {
       ...product,
       productImage: cleanCoupangImageUrl(product.productImage, product.productId),
     }));
-    
+
     if (finalResult.length === 0) {
-      console.warn(`[Coupang API Handler] No products found after filtering.`);
-      return NextResponse.json({ 
-        products: [], 
-        error: '검색 결과가 없거나 접근이 차단되었습니다.',
-        debug: { screenshot: '/search_debug.png' }
-      });
+      console.warn(`[Coupang API Handler] No products after filtering.`);
+      return NextResponse.json({
+        error: '필터링 후 검색 결과가 없습니다.',
+        debug: {
+          keyword,
+          rawDataCount: coupangData.length,
+          filteredCount: 0,
+          message: 'All products filtered out'
+        }
+      }, { status: 200 }); // 200으로 변경 (데이터는 있었으나 필터링됨)
     }
 
     console.log(`[Coupang API Handler] ${finalResult.length} items remain after filtering.`);
