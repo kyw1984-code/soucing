@@ -750,12 +750,11 @@ export default function SourcingDashboard() {
         return;
       }
 
-      // 1688 가격 초기화 (로컬스토리지에서 불러오거나 자동 추정)
+      // 1688 가격 초기화 (사용자가 직접 입력해 저장한 위안 금액만 사용. 쿠팡 판매가로 자동 추정하지 않음)
       const savedPrices = JSON.parse(localStorage.getItem('1688prices') || '{}');
       const enrichedData = data.map((product: Product) => {
         const saved = savedPrices[product.productId];
-        const estimated = saved || Math.round(product.productPrice / sourcingMultiplier);
-        return { ...product, estimated1688Price: estimated };
+        return { ...product, estimated1688Price: saved || undefined };
       });
 
       setProducts(enrichedData);
