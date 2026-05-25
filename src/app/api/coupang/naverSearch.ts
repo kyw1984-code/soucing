@@ -42,6 +42,7 @@ async function searchNaverShopping(
   start = 1,
   display = 100,
   sort: 'sim' | 'date' | 'asc' | 'dsc' = 'sim',
+  retryCount = 0,
 ): Promise<NaverShopItem[]> {
   const url = `https://openapi.naver.com/v1/search/shop.json?query=${encodeURIComponent(keyword)}&display=${display}&start=${start}&sort=${sort}`;
   try {
@@ -51,15 +52,22 @@ async function searchNaverShopping(
         'X-Naver-Client-Secret': NAVER_CLIENT_SECRET,
       },
     });
+    // 429이면 잠시 대기 후 최대 2회 재시도
+    if (res.status === 429 && retryCount < 2) {
+      const wait = 600 + retryCount * 800; // 600ms → 1400ms
+      console.warn(`[NAVER_429] retry "${keyword}" start=${start} after ${wait}ms`);
+      await new Promise((r) => setTimeout(r, wait));
+      return searchNaverShopping(keyword, start, display, sort, retryCount + 1);
+    }
     if (!res.ok) {
       const text = await res.text().catch(() => '');
-      console.error(`[Naver API] HTTP ${res.status} for "${keyword}" start=${start}: ${text.slice(0, 200)}`);
+      console.error(`[NAVER_${res.status}] "${keyword}" start=${start}: ${text.slice(0, 120)}`);
       return [];
     }
     const data = await res.json();
     return Array.isArray(data.items) ? data.items : [];
   } catch (e: any) {
-    console.error(`[Naver API] Fetch error for "${keyword}": ${e?.message}`);
+    console.error(`[NAVER_ERR] "${keyword}": ${e?.message}`);
     return [];
   }
 }
@@ -100,19 +108,17 @@ export async function fetchCoupangViaNaver(keyword: string): Promise<any[]> {
   }
   console.log(`[NAVER_START] id_len=${NAVER_CLIENT_ID.length} secret_len=${NAVER_CLIENT_SECRET.length}`);
 
-  // Naver 검색 API는 초당 ~10회 제한. 동시 호출 너무 많으면 429.
-  // 안전하게 6회 동시 호출 × 3 batch = 총 18회. 각 batch 사이 400ms 대기.
+  // Naver 검색 API rate limit 매우 엄격 (IP 공유 환경에서 더 빡빡).
+  // 매우 보수적으로: 3개씩 동시 호출 × 4 batch × 700ms 대기 = 총 12회
+  // 429 받으면 함수 내부에서 자동 재시도 (최대 2회)
   const variations = [
     keyword,
     `${keyword} 쿠팡`,
     `${keyword} 추천`,
     `${keyword} 인기`,
-    `${keyword} 베스트`,
-    `${keyword} 가성비`,
   ];
   const sorts: Array<'sim' | 'date' | 'asc'> = ['sim', 'date', 'asc'];
 
-  // 변형 6개 × sort 3개 = 18회 호출 (페이지는 start=1만, rate limit 회피)
   const callPlan: Array<{ kw: string; start: number; sort: 'sim' | 'date' | 'asc' }> = [];
   for (const kw of variations) {
     for (const sort of sorts) {
@@ -120,9 +126,8 @@ export async function fetchCoupangViaNaver(keyword: string): Promise<any[]> {
     }
   }
 
-  // 6개씩 배치 처리, 배치 사이 400ms 대기 (네이버 초당 10회 한도 안전)
-  const BATCH_SIZE = 6;
-  const BATCH_DELAY_MS = 400;
+  const BATCH_SIZE = 3;
+  const BATCH_DELAY_MS = 700;
   const results: NaverShopItem[][] = [];
   for (let i = 0; i < callPlan.length; i += BATCH_SIZE) {
     const batch = callPlan.slice(i, i + BATCH_SIZE);
