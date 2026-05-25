@@ -8,19 +8,27 @@ import { createClient } from '@supabase/supabase-js';
 // Environment variables
 const ACCESS_KEY = (process.env.COUPANG_PARTNERS_ACCESS_KEY || '').trim();
 const SECRET_KEY = (process.env.COUPANG_PARTNERS_SECRET_KEY || '').trim();
-const SUPABASE_URL = (process.env.SUPABASE_URL || '').trim();
+// SUPABASE_URL이 없으면 NEXT_PUBLIC_SUPABASE_URL로 fallback
+const SUPABASE_URL = (
+  process.env.SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  ''
+).trim();
 const SUPABASE_KEY = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
 
 
 // Initialize Supabase safely
 let supabase: any = null;
+let supabaseInitErr = '';
 try {
   if (SUPABASE_URL && SUPABASE_KEY && SUPABASE_URL.startsWith('http')) {
     supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
   } else {
-    console.warn('[Supabase] Missing or malformed URL. Caching disabled.');
+    supabaseInitErr = `url=${!!SUPABASE_URL} key=${!!SUPABASE_KEY}`;
+    console.warn(`[Supabase] Caching disabled: ${supabaseInitErr}`);
   }
-} catch (e) {
+} catch (e: any) {
+  supabaseInitErr = e?.message || 'init throw';
   console.error('[Supabase] Initialization failed:', e);
 }
 
@@ -136,6 +144,7 @@ export async function GET(request: NextRequest) {
         'x-cache': debug.cache,
         'x-debug-api': String(debug.api),
         'x-debug-final': String(finalResult.length),
+        'x-debug-supabase': supabase ? 'on' : `off:${supabaseInitErr.slice(0, 60)}`,
       },
     });
 
