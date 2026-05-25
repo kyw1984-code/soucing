@@ -81,8 +81,8 @@ export async function fetchCoupangViaNaver(keyword: string): Promise<any[]> {
     return [];
   }
 
-  // 변형 키워드 5개 × 페이지 3개씩 = 최대 15회 호출
-  // 각 호출 display=100 → 최대 1,500개 raw → 쿠팡 비율 30~70% → dedup 후 200~400개
+  // 변형 키워드 5개 × 페이지 5개씩 = 최대 25회 호출
+  // 각 호출 display=100 → 최대 2,500개 raw → 쿠팡 비율 30~70% → dedup 후 300~600개
   const variations = [
     keyword,
     `${keyword} 추천`,
@@ -91,12 +91,12 @@ export async function fetchCoupangViaNaver(keyword: string): Promise<any[]> {
     `${keyword} 가성비`,
   ];
 
-  // 변형 × (start=1, 101, 201) 페이지네이션 (Naver는 start max 1000)
+  // 변형 × 5 페이지 (start=1, 101, 201, 301, 401) — 깊이 늘려서 unique 상품 확보
   const callPlan: Array<{ kw: string; start: number }> = [];
   for (const kw of variations) {
-    callPlan.push({ kw, start: 1 });
-    callPlan.push({ kw, start: 101 });
-    callPlan.push({ kw, start: 201 });
+    for (const start of [1, 101, 201, 301, 401]) {
+      callPlan.push({ kw, start });
+    }
   }
 
   const results = await Promise.all(
