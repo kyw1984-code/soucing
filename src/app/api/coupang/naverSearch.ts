@@ -24,8 +24,13 @@ interface NaverShopItem {
   category4: string;
 }
 
-async function searchNaverShopping(keyword: string, start = 1, display = 100): Promise<NaverShopItem[]> {
-  const url = `https://openapi.naver.com/v1/search/shop.json?query=${encodeURIComponent(keyword)}&display=${display}&start=${start}&sort=sim`;
+async function searchNaverShopping(
+  keyword: string,
+  start = 1,
+  display = 100,
+  sort: 'sim' | 'date' | 'asc' | 'dsc' = 'sim',
+): Promise<NaverShopItem[]> {
+  const url = `https://openapi.naver.com/v1/search/shop.json?query=${encodeURIComponent(keyword)}&display=${display}&start=${start}&sort=${sort}`;
   try {
     const res = await fetch(url, {
       headers: {
@@ -81,26 +86,29 @@ export async function fetchCoupangViaNaver(keyword: string): Promise<any[]> {
     return [];
   }
 
-  // 변형 키워드 5개 × 페이지 5개씩 = 최대 25회 호출
-  // 각 호출 display=100 → 최대 2,500개 raw → 쿠팡 비율 30~70% → dedup 후 300~600개
+  // 4개 변형 × 3 페이지 × 3 sort = 36회 호출
+  // - 검색어에 "쿠팡" 명시해서 쿠팡 결과 비중 ↑
+  // - sort 다양화로 같은 키워드라도 진짜 다른 상품 가져오기 (인기순/최신순/가격순)
   const variations = [
     keyword,
+    `${keyword} 쿠팡`,
     `${keyword} 추천`,
     `${keyword} 인기`,
-    `${keyword} 베스트`,
-    `${keyword} 가성비`,
   ];
+  const sorts: Array<'sim' | 'date' | 'asc'> = ['sim', 'date', 'asc'];
+  const pages = [1, 101, 201];
 
-  // 변형 × 5 페이지 (start=1, 101, 201, 301, 401) — 깊이 늘려서 unique 상품 확보
-  const callPlan: Array<{ kw: string; start: number }> = [];
+  const callPlan: Array<{ kw: string; start: number; sort: 'sim' | 'date' | 'asc' }> = [];
   for (const kw of variations) {
-    for (const start of [1, 101, 201, 301, 401]) {
-      callPlan.push({ kw, start });
+    for (const sort of sorts) {
+      for (const start of pages) {
+        callPlan.push({ kw, start, sort });
+      }
     }
   }
 
   const results = await Promise.all(
-    callPlan.map(({ kw, start }) => searchNaverShopping(kw, start, 100)),
+    callPlan.map(({ kw, start, sort }) => searchNaverShopping(kw, start, 100, sort)),
   );
 
   // 쿠팡 상품만 필터링 (link 우선 — mallName 변형이 많아서)
