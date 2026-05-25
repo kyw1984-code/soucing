@@ -90,7 +90,7 @@ export async function scrapeCoupangSearch(keyword: string, cookie: string) {
         if (items.length > 0) break;
       }
 
-      return items.slice(0, 15).map(item => {
+      return items.slice(0, 100).map(item => {
         const productId = item.getAttribute('data-product-id') || item.getAttribute('data-id') || '';
         const productName = (item.querySelector('.name, .product-name, h3, .title')?.textContent || '').trim();
         const priceValue = (item.querySelector('.price-value, .sale-price, strong, .price')?.textContent || '0').replace(/[^0-9]/g, '');

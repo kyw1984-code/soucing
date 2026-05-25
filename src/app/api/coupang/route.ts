@@ -224,7 +224,7 @@ async function generateSignature(method: string, path: string, query: string) {
 async function fetchByKeyword(keyword: string): Promise<any[]> {
   const method = 'GET';
   const path = '/v2/providers/affiliate_open_api/apis/openapi/v1/products/search';
-  const query = `keyword=${encodeURIComponent(keyword)}&limit=10`;
+  const query = `keyword=${encodeURIComponent(keyword)}&limit=100`;
   const url = `https://api-gateway.coupang.com${path}?${query}`;
 
   const { timestamp, signature } = await generateSignature(method, path, query);
