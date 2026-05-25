@@ -103,8 +103,12 @@ export async function fetchCoupangViaNaver(keyword: string): Promise<any[]> {
     callPlan.map(({ kw, start }) => searchNaverShopping(kw, start, 100)),
   );
 
-  // 쿠팡 상품만 필터링
-  const coupangOnly = results.flat().filter((item) => item.mallName === '쿠팡');
+  // 쿠팡 상품만 필터링 (link 우선 — mallName 변형이 많아서)
+  const coupangOnly = results.flat().filter((item) => {
+    if (item.link && /coupang\.com/i.test(item.link)) return true;
+    if (item.mallName && /쿠팡|coupang/i.test(item.mallName)) return true;
+    return false;
+  });
 
   // productId 기준 중복 제거 (먼저 들어온 결과 우선)
   const seen = new Set<string>();
