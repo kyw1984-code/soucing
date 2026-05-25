@@ -308,6 +308,16 @@ export default function SourcingDashboard() {
   );
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
+  // ESC 키로 카테고리 모달 닫기
+  useEffect(() => {
+    if (!expandedCategory) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setExpandedCategory(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expandedCategory]);
+
   // Intel states
   const [keywordStats, setKeywordStats] = useState<any | null>(null);
 
@@ -344,72 +354,183 @@ export default function SourcingDashboard() {
 
   const CATEGORIES = [
     {
-      label: "패션의류",
+      label: "여성패션",
       icon: Shirt,
       subs: [
         {
-          label: "여성패션",
+          label: "상의",
           items: [
-            { label: "원피스", keyword: "여성 원피스" },
             { label: "티셔츠", keyword: "여성 티셔츠" },
             { label: "블라우스", keyword: "여성 블라우스" },
             { label: "셔츠", keyword: "여성 셔츠" },
             { label: "니트", keyword: "여성 니트" },
             { label: "가디건", keyword: "여성 가디건" },
-            { label: "자켓", keyword: "여성 자켓" },
-            { label: "코트", keyword: "여성 코트" },
-            { label: "바지", keyword: "여성 바지" },
-            { label: "슬랙스", keyword: "여성 슬랙스" },
-            { label: "스커트", keyword: "여성 스커트" },
-            { label: "치마", keyword: "여성 치마" },
-            { label: "레깅스", keyword: "여성 레깅스" },
-            { label: "트레이닝복", keyword: "여성 트레이닝복" },
-            { label: "홈웨어", keyword: "여성 잠옷 홈웨어" },
+            { label: "후드티", keyword: "여성 후드티" },
+            { label: "맨투맨", keyword: "여성 맨투맨" },
           ],
         },
         {
-          label: "남성패션",
+          label: "하의",
+          items: [
+            { label: "바지", keyword: "여성 바지" },
+            { label: "슬랙스", keyword: "여성 슬랙스" },
+            { label: "청바지", keyword: "여성 청바지" },
+            { label: "스커트", keyword: "여성 스커트" },
+            { label: "치마", keyword: "여성 치마" },
+            { label: "레깅스", keyword: "여성 레깅스" },
+            { label: "쇼츠", keyword: "여성 쇼츠" },
+          ],
+        },
+        {
+          label: "아우터/원피스",
+          items: [
+            { label: "원피스", keyword: "여성 원피스" },
+            { label: "자켓", keyword: "여성 자켓" },
+            { label: "코트", keyword: "여성 코트" },
+            { label: "패딩", keyword: "여성 패딩" },
+            { label: "점퍼", keyword: "여성 점퍼" },
+            { label: "트렌치코트", keyword: "여성 트렌치코트" },
+          ],
+        },
+        {
+          label: "이너/홈웨어",
+          items: [
+            { label: "트레이닝복", keyword: "여성 트레이닝복" },
+            { label: "잠옷", keyword: "여성 잠옷" },
+            { label: "홈웨어", keyword: "여성 홈웨어" },
+            { label: "속옷", keyword: "여성 속옷" },
+            { label: "수영복", keyword: "여성 수영복" },
+          ],
+        },
+      ],
+    },
+    {
+      label: "남성패션",
+      icon: Shirt,
+      subs: [
+        {
+          label: "상의",
           items: [
             { label: "티셔츠", keyword: "남성 티셔츠" },
             { label: "셔츠", keyword: "남성 셔츠" },
             { label: "남방", keyword: "남성 남방" },
             { label: "니트", keyword: "남성 니트" },
             { label: "가디건", keyword: "남성 가디건" },
-            { label: "자켓", keyword: "남성 자켓" },
-            { label: "점퍼", keyword: "남성 점퍼" },
+            { label: "후드티", keyword: "남성 후드티" },
+            { label: "맨투맨", keyword: "남성 맨투맨" },
+            { label: "폴로셔츠", keyword: "남성 폴로셔츠" },
+          ],
+        },
+        {
+          label: "하의",
+          items: [
             { label: "바지", keyword: "남성 바지" },
             { label: "슬랙스", keyword: "남성 슬랙스" },
             { label: "청바지", keyword: "남성 청바지" },
+            { label: "면바지", keyword: "남성 면바지" },
+            { label: "반바지", keyword: "남성 반바지" },
+            { label: "조거팬츠", keyword: "남성 조거팬츠" },
+          ],
+        },
+        {
+          label: "아우터",
+          items: [
+            { label: "자켓", keyword: "남성 자켓" },
+            { label: "점퍼", keyword: "남성 점퍼" },
+            { label: "코트", keyword: "남성 코트" },
+            { label: "패딩", keyword: "남성 패딩" },
+            { label: "야상", keyword: "남성 야상" },
+            { label: "바람막이", keyword: "남성 바람막이" },
+          ],
+        },
+        {
+          label: "이너/홈웨어",
+          items: [
             { label: "트레이닝복", keyword: "남성 트레이닝복" },
+            { label: "잠옷", keyword: "남성 잠옷" },
+            { label: "속옷", keyword: "남성 속옷" },
+            { label: "런닝", keyword: "남성 런닝" },
+            { label: "수영복", keyword: "남성 수영복" },
           ],
         },
       ],
     },
     {
-      label: "패션잡화",
+      label: "여성잡화",
       icon: Shirt,
       subs: [
         {
           label: "신발",
           items: [
-            { label: "여성 신발", keyword: "여성 구두 운동화" },
-            { label: "남성 신발", keyword: "남성 구두 운동화" },
-            { label: "스니커즈", keyword: "스니커즈" },
-            { label: "슬립온", keyword: "슬립온" },
-            { label: "슬리퍼", keyword: "슬리퍼" },
-            { label: "샌들", keyword: "샌들" },
+            { label: "구두", keyword: "여성 구두" },
+            { label: "운동화", keyword: "여성 운동화" },
+            { label: "샌들", keyword: "여성 샌들" },
+            { label: "슬리퍼", keyword: "여성 슬리퍼" },
+            { label: "부츠", keyword: "여성 부츠" },
+            { label: "단화", keyword: "여성 단화" },
           ],
         },
         {
-          label: "가방 및 잡화",
+          label: "가방/지갑",
           items: [
-            { label: "가방", keyword: "여성 남성 가방" },
-            { label: "백팩", keyword: "백팩" },
-            { label: "지갑", keyword: "지갑" },
-            { label: "벨트", keyword: "벨트" },
-            { label: "모자", keyword: "볼캡 버킷햇" },
-            { label: "양말", keyword: "패션 양말" },
+            { label: "가방", keyword: "여성 가방" },
+            { label: "백팩", keyword: "여성 백팩" },
+            { label: "크로스백", keyword: "여성 크로스백" },
+            { label: "토트백", keyword: "여성 토트백" },
+            { label: "지갑", keyword: "여성 지갑" },
+            { label: "파우치", keyword: "여성 파우치" },
+          ],
+        },
+        {
+          label: "액세서리",
+          items: [
+            { label: "모자", keyword: "여성 모자" },
+            { label: "벨트", keyword: "여성 벨트" },
+            { label: "스카프", keyword: "여성 스카프" },
+            { label: "머플러", keyword: "여성 머플러" },
             { label: "스타킹", keyword: "여성 스타킹" },
+            { label: "양말", keyword: "여성 양말" },
+            { label: "장갑", keyword: "여성 장갑" },
+          ],
+        },
+      ],
+    },
+    {
+      label: "남성잡화",
+      icon: Shirt,
+      subs: [
+        {
+          label: "신발",
+          items: [
+            { label: "구두", keyword: "남성 구두" },
+            { label: "운동화", keyword: "남성 운동화" },
+            { label: "샌들", keyword: "남성 샌들" },
+            { label: "슬리퍼", keyword: "남성 슬리퍼" },
+            { label: "부츠", keyword: "남성 부츠" },
+            { label: "스니커즈", keyword: "남성 스니커즈" },
+          ],
+        },
+        {
+          label: "가방/지갑",
+          items: [
+            { label: "가방", keyword: "남성 가방" },
+            { label: "백팩", keyword: "남성 백팩" },
+            { label: "크로스백", keyword: "남성 크로스백" },
+            { label: "서류가방", keyword: "남성 서류가방" },
+            { label: "지갑", keyword: "남성 지갑" },
+            { label: "카드지갑", keyword: "남성 카드지갑" },
+          ],
+        },
+        {
+          label: "액세서리",
+          items: [
+            { label: "모자", keyword: "남성 볼캡 버킷햇" },
+            { label: "벨트", keyword: "남성 벨트" },
+            { label: "머플러", keyword: "남성 머플러" },
+            { label: "양말", keyword: "남성 양말" },
+            { label: "장갑", keyword: "남성 장갑" },
+            { label: "넥타이", keyword: "남성 넥타이" },
+            { label: "시계", keyword: "남성 시계" },
           ],
         },
       ],
@@ -952,14 +1073,19 @@ export default function SourcingDashboard() {
                             initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           exit={{ opacity: 0 }}
-                          onClick={() => setExpandedCategory(null)}
-                          className="fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setExpandedCategory(null);
+                          }}
+                          className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm cursor-pointer"
                         />
                         <motion.div
                           initial={{ scale: 0.95, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           exit={{ scale: 0.95, opacity: 0 }}
-                          className="fixed inset-0 m-auto z-50 w-[95%] max-w-[1200px] h-fit max-h-[85vh] bg-white rounded-[48px] p-12 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.3)] border border-slate-200 overflow-y-auto"
+                          onMouseDown={(e) => e.stopPropagation()}
+                          className="fixed inset-0 m-auto z-[70] w-[95%] max-w-[1200px] h-fit max-h-[85vh] bg-white rounded-[48px] p-12 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.3)] border border-slate-200 overflow-y-auto"
                         >
                         <div className="flex items-center justify-between mb-10 pb-8 border-b border-slate-100">
                           <div className="flex items-center gap-4">
