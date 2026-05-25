@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await guard.admin
     .from('profiles')
-    .select('id, email, name, phone, status, role, created_at, approved_at')
+    .select('id, email, name, phone, status, role, created_at, approved_at, expires_at')
     .eq('status', status)
     .order('created_at', { ascending: false });
 

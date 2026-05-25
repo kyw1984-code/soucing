@@ -214,7 +214,12 @@ const SellerLandscape = ({ products }: { products: Product[] }) => {
 export default function SourcingDashboard() {
   const router = useRouter();
   const [authChecking, setAuthChecking] = useState(true);
-  const [currentUser, setCurrentUser] = useState<{ name: string; isAdmin: boolean } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    name: string;
+    isAdmin: boolean;
+    expiresAt: string | null;
+    daysLeft: number | null;
+  } | null>(null);
 
   useEffect(() => {
     const supabase = getBrowserClient();
@@ -226,7 +231,7 @@ export default function SourcingDashboard() {
       }
       const { data: profile } = await supabase
         .from("profiles")
-        .select("name, status")
+        .select("name, status, expires_at, role")
         .eq("id", session.user.id)
         .single();
       if (!profile || profile.status !== "approved") {
@@ -236,7 +241,29 @@ export default function SourcingDashboard() {
       }
       const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").trim().toLowerCase();
       const email = (session.user.email || "").trim().toLowerCase();
-      setCurrentUser({ name: profile.name, isAdmin: !!adminEmail && email === adminEmail });
+      const isAdmin = !!adminEmail && email === adminEmail;
+
+      // 만료 체크 (관리자 제외)
+      let daysLeft: number | null = null;
+      if (!isAdmin && profile.expires_at) {
+        const expMs = new Date(profile.expires_at).getTime();
+        const diffMs = expMs - Date.now();
+        if (diffMs <= 0) {
+          await supabase.auth.signOut();
+          const expDate = new Date(profile.expires_at).toLocaleDateString("ko-KR");
+          alert(`이용 기간이 만료되었습니다(${expDate}). 관리자에게 연장을 요청해 주세요.`);
+          router.replace("/login");
+          return;
+        }
+        daysLeft = Math.ceil(diffMs / (24 * 60 * 60 * 1000));
+      }
+
+      setCurrentUser({
+        name: profile.name,
+        isAdmin,
+        expiresAt: profile.expires_at,
+        daysLeft,
+      });
       setAuthChecking(false);
     });
   }, [router]);
@@ -857,6 +884,20 @@ export default function SourcingDashboard() {
             {currentUser && (
               <span className="text-xs font-black text-slate-600 px-3">
                 {currentUser.name} 님
+              </span>
+            )}
+            {currentUser && !currentUser.isAdmin && currentUser.daysLeft !== null && (
+              <span
+                className={`text-[11px] font-black px-2.5 py-1.5 rounded-lg ${
+                  currentUser.daysLeft <= 1
+                    ? "bg-rose-50 text-rose-600"
+                    : currentUser.daysLeft <= 3
+                    ? "bg-amber-50 text-amber-700"
+                    : "bg-emerald-50 text-emerald-700"
+                }`}
+                title={currentUser.expiresAt ? `만료일: ${new Date(currentUser.expiresAt).toLocaleString("ko-KR")}` : ""}
+              >
+                남은 {currentUser.daysLeft}일
               </span>
             )}
             {currentUser?.isAdmin && (

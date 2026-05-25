@@ -34,4 +34,5 @@ export interface Profile {
   role: ProfileRole;
   created_at: string;
   approved_at: string | null;
+  expires_at: string | null;
 }

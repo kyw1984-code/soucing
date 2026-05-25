@@ -27,7 +27,7 @@ export default function LoginPage() {
 
       const { data: profile, error: profileErr } = await supabase
         .from("profiles")
-        .select("status")
+        .select("status, expires_at, role")
         .eq("id", data.user.id)
         .single();
 
@@ -46,6 +46,17 @@ export default function LoginPage() {
         await supabase.auth.signOut();
         setError("가입이 거절된 계정입니다. 관리자에게 문의하세요.");
         return;
+      }
+
+      // 이용 기간 만료 체크 (관리자는 만료 없음)
+      if (profile.role !== "admin" && profile.expires_at) {
+        const expiresAt = new Date(profile.expires_at).getTime();
+        if (Date.now() > expiresAt) {
+          await supabase.auth.signOut();
+          const expDate = new Date(profile.expires_at).toLocaleDateString("ko-KR");
+          setError(`이용 기간이 만료되었습니다(${expDate}). 관리자에게 연장을 요청해 주세요.`);
+          return;
+        }
       }
 
       router.push("/");

@@ -33,6 +33,9 @@ export async function POST(request: NextRequest) {
     const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
     const isAdmin = adminEmail && email.trim().toLowerCase() === adminEmail;
 
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
     const { error: profileErr } = await admin.from('profiles').insert({
       id: created.user.id,
       email,
@@ -40,7 +43,8 @@ export async function POST(request: NextRequest) {
       phone: phone || null,
       status: isAdmin ? 'approved' : 'pending',
       role: isAdmin ? 'admin' : 'user',
-      approved_at: isAdmin ? new Date().toISOString() : null,
+      approved_at: isAdmin ? now.toISOString() : null,
+      expires_at: isAdmin ? null : expiresAt.toISOString(),
     });
 
     if (profileErr) {
