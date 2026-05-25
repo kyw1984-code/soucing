@@ -108,37 +108,12 @@ export async function fetchCoupangViaNaver(keyword: string): Promise<any[]> {
   }
   console.log(`[NAVER_START] id_len=${NAVER_CLIENT_ID.length} secret_len=${NAVER_CLIENT_SECRET.length}`);
 
-  // Naver 검색 API rate limit 매우 엄격 (IP 공유 환경에서 더 빡빡).
-  // 매우 보수적으로: 3개씩 동시 호출 × 4 batch × 700ms 대기 = 총 12회
-  // 429 받으면 함수 내부에서 자동 재시도 (최대 2회)
-  const variations = [
-    keyword,
-    `${keyword} 쿠팡`,
-    `${keyword} 추천`,
-    `${keyword} 인기`,
+  // Vercel 서버리스 환경에서 Naver API는 IP 공유로 인해 rate limit이
+  // 매우 빡빡함. 단 1회만 호출해서 안전하게 결과 확보.
+  // 429 받으면 함수 내부에서 자동 재시도 (최대 2회).
+  const results: NaverShopItem[][] = [
+    await searchNaverShopping(keyword, 1, 100, 'sim'),
   ];
-  const sorts: Array<'sim' | 'date' | 'asc'> = ['sim', 'date', 'asc'];
-
-  const callPlan: Array<{ kw: string; start: number; sort: 'sim' | 'date' | 'asc' }> = [];
-  for (const kw of variations) {
-    for (const sort of sorts) {
-      callPlan.push({ kw, start: 1, sort });
-    }
-  }
-
-  const BATCH_SIZE = 3;
-  const BATCH_DELAY_MS = 700;
-  const results: NaverShopItem[][] = [];
-  for (let i = 0; i < callPlan.length; i += BATCH_SIZE) {
-    const batch = callPlan.slice(i, i + BATCH_SIZE);
-    const batchResults = await Promise.all(
-      batch.map(({ kw, start, sort }) => searchNaverShopping(kw, start, 100, sort)),
-    );
-    results.push(...batchResults);
-    if (i + BATCH_SIZE < callPlan.length) {
-      await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
-    }
-  }
 
   // 쿠팡 상품만 필터링 (link 우선 — mallName 변형이 많아서)
   const coupangOnly = results.flat().filter((item) => {

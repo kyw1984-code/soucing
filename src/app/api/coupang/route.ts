@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { scrapeCoupangSearch } from './playwrightSearch';
-import { fetchCoupangViaNaver } from './naverSearch';
-// Imports for on-demand enrichment moved to separate routes
+// Naver/Playwright는 Vercel 환경에서 rate limit/binary 이슈로 비활성화.
+// 쿠팡 파트너스 API + Supabase 캐싱 조합으로 통일.
 
 // Use default Node.js runtime for better stability on Windows dev environments
 
@@ -36,50 +35,49 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const clientCookie = request.headers.get('x-client-cookie') || '';
-    const cookieToUse = clientCookie || process.env.COUPANG_COOKIE || '';
-
     console.log(`[Coupang API Handler] Start search for: "${keyword}"`);
 
-    const debug = { naver: 0, scraper: 0, api: 0, naverErr: '' };
+    const debug = { cache: 'MISS', api: 0 };
+    const CACHE_TTL_MS = 5 * 60 * 1000; // 5분 캐시
 
-    // 1. PRIMARY: Naver Shopping API로 쿠팡 상품만 필터링 (rate-limit 안전)
+    // 0) 캐시 조회 (5분 이내면 즉시 응답)
     let coupangData: any[] = [];
-    try {
-      coupangData = await fetchCoupangViaNaver(keyword);
-      debug.naver = coupangData.length;
-      if (coupangData.length > 0) {
-        console.log(`[Coupang API Handler] Naver success: ${coupangData.length} items found.`);
-      }
-    } catch (naverErr: any) {
-      debug.naverErr = naverErr?.message || 'unknown';
-      console.error(`[Coupang API Handler] Naver failed:`, naverErr?.message);
-    }
-
-    // 2. FALLBACK 1: Playwright 스크래퍼 (서버리스에선 거의 실패하지만 시도)
-    if (coupangData.length === 0) {
+    if (supabase) {
       try {
-        console.log(`[Coupang API Handler] Naver empty. Trying scraper...`);
-        coupangData = await scrapeCoupangSearch(keyword, cookieToUse);
-        debug.scraper = coupangData?.length || 0;
-        if (coupangData?.length) {
-          coupangData = coupangData.map((item: any) => ({ ...item, source: 'scraper' }));
+        const { data: cached } = await supabase
+          .from('coupang_cache')
+          .select('data, updated_at')
+          .eq('keyword', keyword)
+          .maybeSingle();
+        if (cached?.data && Array.isArray(cached.data)) {
+          const ageMs = Date.now() - new Date(cached.updated_at).getTime();
+          if (ageMs < CACHE_TTL_MS) {
+            console.log(`[Cache] HIT "${keyword}" age=${Math.round(ageMs / 1000)}s`);
+            debug.cache = 'HIT';
+            coupangData = cached.data;
+          }
         }
-      } catch (scrapError: any) {
-        console.error(`[Coupang API Handler] Scraper failed:`, scrapError?.message);
+      } catch (e) {
+        // 캐시 실패는 무시
       }
     }
 
-    // 3. FALLBACK 2: 쿠팡 파트너스 API (키가 있을 때만)
-    if (coupangData.length === 0 && ACCESS_KEY && SECRET_KEY) {
-      console.log(`[Coupang API Handler] Scraper empty. Falling back to Partners API...`);
+    // 1) 캐시 miss이면 쿠팡 파트너스 API 호출
+    if (coupangData.length === 0) {
+      if (!ACCESS_KEY || !SECRET_KEY) {
+        return NextResponse.json(
+          { error: '쿠팡 파트너스 API 키가 설정되지 않았습니다.' },
+          { status: 500 },
+        );
+      }
       coupangData = await fetchCoupangProducts(keyword);
-      debug.api = coupangData.length;
       coupangData = coupangData.map((item: any) => ({ ...item, source: 'api' }));
+      debug.api = coupangData.length;
+      console.log(`[Coupang API Handler] api=${debug.api}`);
     }
 
-    // Save to Supabase Cache (Silent Fail)
-    if (supabase && coupangData.length > 0) {
+    // Save to Supabase Cache (캐시 miss 일 때만 갱신)
+    if (supabase && debug.cache === 'MISS' && coupangData.length > 0) {
       try {
         await supabase.from('coupang_cache').upsert({
           keyword,
@@ -133,10 +131,9 @@ export async function GET(request: NextRequest) {
     console.log(`[Coupang API Handler] ${finalResult.length} items remain after filtering.`);
     return NextResponse.json(finalResult, {
       headers: {
-        'x-debug-naver': String(debug.naver),
-        'x-debug-scraper': String(debug.scraper),
+        'x-cache': debug.cache,
         'x-debug-api': String(debug.api),
-        'x-debug-naver-err': debug.naverErr.slice(0, 100),
+        'x-debug-final': String(finalResult.length),
       },
     });
 
@@ -229,7 +226,7 @@ async function generateSignature(method: string, path: string, query: string) {
 async function fetchByKeyword(keyword: string): Promise<any[]> {
   const method = 'GET';
   const path = '/v2/providers/affiliate_open_api/apis/openapi/v1/products/search';
-  const query = `keyword=${encodeURIComponent(keyword)}&limit=10`;
+  const query = `keyword=${encodeURIComponent(keyword)}&limit=20`;
   const url = `https://api-gateway.coupang.com${path}?${query}`;
 
   const { timestamp, signature } = await generateSignature(method, path, query);
