@@ -41,14 +41,18 @@ export async function GET(request: NextRequest) {
 
     console.log(`[Coupang API Handler] Start search for: "${keyword}"`);
 
+    const debug = { naver: 0, scraper: 0, api: 0, naverErr: '' };
+
     // 1. PRIMARY: Naver Shopping API로 쿠팡 상품만 필터링 (rate-limit 안전)
     let coupangData: any[] = [];
     try {
       coupangData = await fetchCoupangViaNaver(keyword);
+      debug.naver = coupangData.length;
       if (coupangData.length > 0) {
         console.log(`[Coupang API Handler] Naver success: ${coupangData.length} items found.`);
       }
     } catch (naverErr: any) {
+      debug.naverErr = naverErr?.message || 'unknown';
       console.error(`[Coupang API Handler] Naver failed:`, naverErr?.message);
     }
 
@@ -57,6 +61,7 @@ export async function GET(request: NextRequest) {
       try {
         console.log(`[Coupang API Handler] Naver empty. Trying scraper...`);
         coupangData = await scrapeCoupangSearch(keyword, cookieToUse);
+        debug.scraper = coupangData?.length || 0;
         if (coupangData?.length) {
           coupangData = coupangData.map((item: any) => ({ ...item, source: 'scraper' }));
         }
@@ -69,6 +74,7 @@ export async function GET(request: NextRequest) {
     if (coupangData.length === 0 && ACCESS_KEY && SECRET_KEY) {
       console.log(`[Coupang API Handler] Scraper empty. Falling back to Partners API...`);
       coupangData = await fetchCoupangProducts(keyword);
+      debug.api = coupangData.length;
       coupangData = coupangData.map((item: any) => ({ ...item, source: 'api' }));
     }
 
@@ -125,7 +131,14 @@ export async function GET(request: NextRequest) {
     }
 
     console.log(`[Coupang API Handler] ${finalResult.length} items remain after filtering.`);
-    return NextResponse.json(finalResult);
+    return NextResponse.json(finalResult, {
+      headers: {
+        'x-debug-naver': String(debug.naver),
+        'x-debug-scraper': String(debug.scraper),
+        'x-debug-api': String(debug.api),
+        'x-debug-naver-err': debug.naverErr.slice(0, 100),
+      },
+    });
 
   } catch (error: any) {
     console.error('[Coupang API Fatal Error]:', error.message);
