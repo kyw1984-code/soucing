@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, Loader2, CheckCheck, X, RefreshCw, LogOut, CheckCircle2, Clock, Ban } from "lucide-react";
+import { Shield, Loader2, CheckCheck, X, RefreshCw, LogOut, CheckCircle2, Clock, Ban, Home } from "lucide-react";
 import { getBrowserClient, Profile, ProfileStatus } from "@/lib/supabase";
 
 type Tab = ProfileStatus;
@@ -141,13 +141,22 @@ export default function AdminPage() {
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">User Approval</p>
             </div>
           </div>
-          <button
-            onClick={handleSignOut}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-black text-slate-700 transition-all"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            로그아웃
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="/"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all shadow-sm"
+            >
+              <Home className="w-3.5 h-3.5" />
+              메인 페이지로
+            </a>
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-black text-slate-700 transition-all"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              로그아웃
+            </button>
+          </div>
         </div>
       </nav>
 

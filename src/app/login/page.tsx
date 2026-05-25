@@ -48,12 +48,7 @@ export default function LoginPage() {
         return;
       }
 
-      const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").trim().toLowerCase();
-      if (adminEmail && (data.user.email || "").trim().toLowerCase() === adminEmail) {
-        router.push("/admin");
-      } else {
-        router.push("/");
-      }
+      router.push("/");
     } catch (err: any) {
       setError(err?.message || "네트워크 오류");
     } finally {
