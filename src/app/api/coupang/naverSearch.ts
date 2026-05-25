@@ -4,8 +4,21 @@
  * - 일 25,000회 호출 가능 (수강생 배포에 충분)
  */
 
-const NAVER_CLIENT_ID = (process.env.NAVER_CLIENT_ID || '').trim();
-const NAVER_CLIENT_SECRET = (process.env.NAVER_CLIENT_SECRET || '').trim();
+// 다양한 환경변수 이름 모두 시도 (사용자 등록 이름에 따라)
+const NAVER_CLIENT_ID = (
+  process.env.NAVER_CLIENT_ID ||
+  process.env.NAVER_API_CLIENT_ID ||
+  process.env.NEXT_PUBLIC_NAVER_CLIENT_ID ||
+  process.env.NAVER_ID ||
+  ''
+).trim();
+const NAVER_CLIENT_SECRET = (
+  process.env.NAVER_CLIENT_SECRET ||
+  process.env.NAVER_API_CLIENT_SECRET ||
+  process.env.NAVER_SECRET ||
+  process.env.NAVER_API_SECRET ||
+  ''
+).trim();
 
 interface NaverShopItem {
   title: string;
@@ -82,9 +95,10 @@ function detectDeliveryType(title: string): 'rocket' | 'jet' | 'general' {
  */
 export async function fetchCoupangViaNaver(keyword: string): Promise<any[]> {
   if (!NAVER_CLIENT_ID || !NAVER_CLIENT_SECRET) {
-    console.error('[Naver API] NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 환경변수가 설정되어 있지 않습니다.');
+    console.error(`[NAVER_MISSING] id=${!!NAVER_CLIENT_ID} secret=${!!NAVER_CLIENT_SECRET}`);
     return [];
   }
+  console.log(`[NAVER_START] id_len=${NAVER_CLIENT_ID.length} secret_len=${NAVER_CLIENT_SECRET.length}`);
 
   // 4개 변형 × 3 페이지 × 3 sort = 36회 호출
   // - 검색어에 "쿠팡" 명시해서 쿠팡 결과 비중 ↑
