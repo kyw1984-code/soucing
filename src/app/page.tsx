@@ -245,18 +245,10 @@ export default function SourcingDashboard() {
   // Intel states
   const [keywordStats, setKeywordStats] = useState<any | null>(null);
 
-  // Golden trends
-  const [goldenKeywords, setGoldenKeywords] = useState<any[]>([]);
-
   // Persistence for multiplier
   useEffect(() => {
     const saved = localStorage.getItem("sourcingMultiplier");
     if (saved) setSourcingMultiplier(Number(saved));
-
-    // Fetch Golden Keywords
-    fetch("/api/golden-keywords")
-      .then((res) => res.json())
-      .then((data) => setGoldenKeywords(data));
   }, []);
 
   const handleMultiplierChange = (val: number) => {
@@ -818,67 +810,6 @@ export default function SourcingDashboard() {
       </nav>
 
       <main className="max-w-[1600px] mx-auto px-6 py-8 flex flex-col gap-8 bg-white">
-        {/* Feature 5: Today's Golden Keywords */}
-        <motion.div
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="bg-white rounded-[32px] p-6 border border-slate-200 shadow-sm overflow-hidden"
-        >
-          <div className="flex items-center gap-4 mb-5 px-2">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 bg-amber-500 rounded-xl shadow-lg shadow-amber-200/50">
-                <Sparkles className="w-5 h-5 text-white" />
-              </div>
-              <h3 className="text-xl font-black uppercase tracking-tight text-slate-800">
-                오늘의 <span className="text-amber-500">훈프로 키워드</span>
-              </h3>
-            </div>
-            <div className="h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent mx-4" />
-            <p className="text-[11px] text-slate-500 font-bold uppercase tracking-widest">
-              Blue Ocean Discovery
-            </p>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-4 scrollbar-hide px-2">
-            {goldenKeywords.length > 0
-              ? goldenKeywords.map((g, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      setKeyword(g.keyword);
-                      handleSearchWithKeyword(g.keyword);
-                    }}
-                    className="flex-shrink-0 w-[180px] bg-white border-2 border-slate-200 hover:border-amber-400/50 p-3 rounded-[20px] flex items-center justify-between transition-all group active:scale-95 shadow-sm"
-                  >
-                    <div className="text-left flex-1 pr-2 overflow-hidden">
-                      <p className="text-xs font-black text-slate-800 group-hover:text-amber-400 transition-colors uppercase truncate">
-                        {g.keyword}
-                      </p>
-                      <p className="text-[8px] text-slate-500 font-bold mt-0.5 tracking-tight truncate">
-                        {g.category}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end ml-2 flex-shrink-0">
-                      <span className="text-[8px] font-black text-amber-500">
-                        {g.hotIndex}%
-                      </span>
-                      <div className="w-6 h-1 bg-slate-200 rounded-full mt-0.5 overflow-hidden">
-                        <div
-                          className="h-full bg-amber-500"
-                          style={{ width: `${g.hotIndex}%` }}
-                        />
-                      </div>
-                    </div>
-                  </button>
-                ))
-              : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => (
-                  <div
-                    key={i}
-                    className="w-[180px] h-14 bg-slate-100 animate-pulse rounded-[20px]"
-                  />
-                ))}
-          </div>
-        </motion.div>
-
         {/* Global Control Bar */}
         <div className="sticky top-[64px] z-30 flex flex-col gap-4 bg-white/80 backdrop-blur-md pb-4 pt-2">
           <div className="bg-white rounded-[32px] p-5 border border-slate-200 shadow-sm flex items-start gap-6">
