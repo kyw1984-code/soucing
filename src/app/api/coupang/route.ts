@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { scrapeCoupangSearch } from './playwrightSearch';
+import { fetchCoupangViaNaver } from './naverSearch';
 // Imports for on-demand enrichment moved to separate routes
 
 // Use default Node.js runtime for better stability on Windows dev environments
@@ -34,50 +35,41 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Keyword is required' }, { status: 400 });
   }
 
-  // Validate API credentials
-  if (!ACCESS_KEY || !SECRET_KEY) {
-    console.error('[Coupang API] Missing credentials - ACCESS_KEY or SECRET_KEY not set');
-    return NextResponse.json({
-      error: '쿠팡 파트너스 API 키가 설정되지 않았습니다. .env.local 파일을 확인해주세요.',
-      details: {
-        hasAccessKey: !!ACCESS_KEY,
-        hasSecretKey: !!SECRET_KEY
-      }
-    }, { status: 500 });
-  }
-
-  if (ACCESS_KEY.length < 20 || SECRET_KEY.length < 20) {
-    console.error('[Coupang API] Invalid credentials - Keys appear to be too short');
-    return NextResponse.json({
-      error: '쿠팡 파트너스 API 키가 올바르지 않습니다. 키를 다시 확인해주세요.',
-    }, { status: 500 });
-  }
-
   try {
     const clientCookie = request.headers.get('x-client-cookie') || '';
     const cookieToUse = clientCookie || process.env.COUPANG_COOKIE || '';
 
     console.log(`[Coupang API Handler] Start search for: "${keyword}"`);
 
-    // 1. Try Scraper First (Better Images, More Metadata)
+    // 1. PRIMARY: Naver Shopping API로 쿠팡 상품만 필터링 (rate-limit 안전)
     let coupangData: any[] = [];
     try {
-      console.log(`[Coupang API Handler] Attempting Scraper-First Search...`);
-      coupangData = await scrapeCoupangSearch(keyword, cookieToUse);
-      if (coupangData && coupangData.length > 0) {
-        console.log(`[Coupang API Handler] Scraper success: ${coupangData.length} items found.`);
+      coupangData = await fetchCoupangViaNaver(keyword);
+      if (coupangData.length > 0) {
+        console.log(`[Coupang API Handler] Naver success: ${coupangData.length} items found.`);
       }
-    } catch (scrapError: any) {
-      console.error(`[Coupang API Handler] Scraper failed:`, scrapError.message);
+    } catch (naverErr: any) {
+      console.error(`[Coupang API Handler] Naver failed:`, naverErr?.message);
     }
 
-    // 2. Fallback to Partners API if Scraper failed or returned 0 results
-    if (!coupangData || coupangData.length === 0) {
-      console.log(`[Coupang API Handler] Falling back to Partners API...`);
+    // 2. FALLBACK 1: Playwright 스크래퍼 (서버리스에선 거의 실패하지만 시도)
+    if (coupangData.length === 0) {
+      try {
+        console.log(`[Coupang API Handler] Naver empty. Trying scraper...`);
+        coupangData = await scrapeCoupangSearch(keyword, cookieToUse);
+        if (coupangData?.length) {
+          coupangData = coupangData.map((item: any) => ({ ...item, source: 'scraper' }));
+        }
+      } catch (scrapError: any) {
+        console.error(`[Coupang API Handler] Scraper failed:`, scrapError?.message);
+      }
+    }
+
+    // 3. FALLBACK 2: 쿠팡 파트너스 API (키가 있을 때만)
+    if (coupangData.length === 0 && ACCESS_KEY && SECRET_KEY) {
+      console.log(`[Coupang API Handler] Scraper empty. Falling back to Partners API...`);
       coupangData = await fetchCoupangProducts(keyword);
       coupangData = coupangData.map((item: any) => ({ ...item, source: 'api' }));
-    } else {
-      coupangData = coupangData.map((item: any) => ({ ...item, source: 'scraper' }));
     }
 
     // Save to Supabase Cache (Silent Fail)

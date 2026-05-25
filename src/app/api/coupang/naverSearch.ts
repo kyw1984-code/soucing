@@ -1,0 +1,139 @@
+/**
+ * Naver Shopping API로 쿠팡 상품만 필터링해서 가져오기
+ * - 쿠팡 파트너스 API rate limit 회피
+ * - 일 25,000회 호출 가능 (수강생 배포에 충분)
+ */
+
+const NAVER_CLIENT_ID = (process.env.NAVER_CLIENT_ID || '').trim();
+const NAVER_CLIENT_SECRET = (process.env.NAVER_CLIENT_SECRET || '').trim();
+
+interface NaverShopItem {
+  title: string;
+  link: string;
+  image: string;
+  lprice: string;
+  hprice: string;
+  mallName: string;
+  productId: string;
+  productType: string;
+  brand: string;
+  maker: string;
+  category1: string;
+  category2: string;
+  category3: string;
+  category4: string;
+}
+
+async function searchNaverShopping(keyword: string, start = 1, display = 100): Promise<NaverShopItem[]> {
+  const url = `https://openapi.naver.com/v1/search/shop.json?query=${encodeURIComponent(keyword)}&display=${display}&start=${start}&sort=sim`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        'X-Naver-Client-Id': NAVER_CLIENT_ID,
+        'X-Naver-Client-Secret': NAVER_CLIENT_SECRET,
+      },
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error(`[Naver API] HTTP ${res.status} for "${keyword}" start=${start}: ${text.slice(0, 200)}`);
+      return [];
+    }
+    const data = await res.json();
+    return Array.isArray(data.items) ? data.items : [];
+  } catch (e: any) {
+    console.error(`[Naver API] Fetch error for "${keyword}": ${e?.message}`);
+    return [];
+  }
+}
+
+function stripHtmlAndDecode(s: string): string {
+  return s
+    .replace(/<[^>]*>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .trim();
+}
+
+function extractCoupangProductId(link: string): string | null {
+  // https://www.coupang.com/vp/products/12345?... → "12345"
+  const m = link.match(/\/vp\/products\/(\d+)/);
+  return m ? m[1] : null;
+}
+
+function detectDeliveryType(title: string): 'rocket' | 'jet' | 'general' {
+  const lower = title.toLowerCase();
+  if (lower.includes('판매자로켓') || lower.includes('로켓그로스')) return 'jet';
+  if (lower.includes('로켓배송') || lower.includes('로켓')) return 'rocket';
+  return 'general';
+}
+
+/**
+ * 키워드로 네이버 쇼핑 검색 → 쿠팡 상품만 필터링 → 중복 제거된 상품 배열 반환
+ */
+export async function fetchCoupangViaNaver(keyword: string): Promise<any[]> {
+  if (!NAVER_CLIENT_ID || !NAVER_CLIENT_SECRET) {
+    console.error('[Naver API] NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 환경변수가 설정되어 있지 않습니다.');
+    return [];
+  }
+
+  // 변형 키워드 3개 × 페이지 2개씩 = 최대 6회 호출
+  // 각 호출 display=100 → 최대 600개 raw → 쿠팡 비율 30~70% → dedup 후 100개 안팎
+  const variations = [
+    keyword,
+    `${keyword} 추천`,
+    `${keyword} 인기`,
+  ];
+
+  // 변형 × (start=1, start=101) 페이지네이션
+  const callPlan: Array<{ kw: string; start: number }> = [];
+  for (const kw of variations) {
+    callPlan.push({ kw, start: 1 });
+    callPlan.push({ kw, start: 101 });
+  }
+
+  const results = await Promise.all(
+    callPlan.map(({ kw, start }) => searchNaverShopping(kw, start, 100)),
+  );
+
+  // 쿠팡 상품만 필터링
+  const coupangOnly = results.flat().filter((item) => item.mallName === '쿠팡');
+
+  // productId 기준 중복 제거 (먼저 들어온 결과 우선)
+  const seen = new Set<string>();
+  const products: any[] = [];
+  for (const item of coupangOnly) {
+    const productId = extractCoupangProductId(item.link);
+    if (!productId || seen.has(productId)) continue;
+    seen.add(productId);
+
+    const name = stripHtmlAndDecode(item.title);
+    const price = parseInt(item.lprice, 10) || 0;
+    if (!name || price <= 0) continue;
+
+    products.push({
+      productId: parseInt(productId, 10),
+      productName: name,
+      productPrice: price,
+      productImage: item.image,
+      productUrl: item.link,
+      rating: 0,
+      ratingCount: 0,
+      isRocket: false,
+      deliveryType: detectDeliveryType(name),
+      rank: products.length + 1,
+      source: 'naver',
+      brand: stripHtmlAndDecode(item.brand || item.maker || ''),
+      category: item.category1 || '',
+    });
+  }
+
+  console.log(
+    `[Naver API] keyword="${keyword}" raw=${results.flat().length} coupang=${coupangOnly.length} unique=${products.length}`,
+  );
+  return products;
+}
