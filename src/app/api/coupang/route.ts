@@ -44,12 +44,14 @@ export async function GET(request: NextRequest) {
     let coupangData: any[] = [];
     if (supabase) {
       try {
-        const { data: cached } = await supabase
+        const { data: cached, error: cacheErr } = await supabase
           .from('coupang_cache')
           .select('data, updated_at')
           .eq('keyword', keyword)
           .maybeSingle();
-        if (cached?.data && Array.isArray(cached.data)) {
+        if (cacheErr) {
+          console.warn(`[CACHE_READ_ERR] ${cacheErr.message?.slice(0, 100)}`);
+        } else if (cached?.data && Array.isArray(cached.data)) {
           const ageMs = Date.now() - new Date(cached.updated_at).getTime();
           if (ageMs < CACHE_TTL_MS) {
             console.log(`[Cache] HIT "${keyword}" age=${Math.round(ageMs / 1000)}s`);
@@ -57,8 +59,8 @@ export async function GET(request: NextRequest) {
             coupangData = cached.data;
           }
         }
-      } catch (e) {
-        // 캐시 실패는 무시
+      } catch (e: any) {
+        console.warn(`[CACHE_READ_THROW] ${e?.message?.slice(0, 100)}`);
       }
     }
 
@@ -226,7 +228,7 @@ async function generateSignature(method: string, path: string, query: string) {
 async function fetchByKeyword(keyword: string): Promise<any[]> {
   const method = 'GET';
   const path = '/v2/providers/affiliate_open_api/apis/openapi/v1/products/search';
-  const query = `keyword=${encodeURIComponent(keyword)}&limit=20`;
+  const query = `keyword=${encodeURIComponent(keyword)}&limit=10`;
   const url = `https://api-gateway.coupang.com${path}?${query}`;
 
   const { timestamp, signature } = await generateSignature(method, path, query);
