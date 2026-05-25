@@ -100,30 +100,40 @@ export async function fetchCoupangViaNaver(keyword: string): Promise<any[]> {
   }
   console.log(`[NAVER_START] id_len=${NAVER_CLIENT_ID.length} secret_len=${NAVER_CLIENT_SECRET.length}`);
 
-  // 4개 변형 × 3 페이지 × 3 sort = 36회 호출
-  // - 검색어에 "쿠팡" 명시해서 쿠팡 결과 비중 ↑
-  // - sort 다양화로 같은 키워드라도 진짜 다른 상품 가져오기 (인기순/최신순/가격순)
+  // Naver 검색 API는 초당 ~10회 제한. 동시 호출 너무 많으면 429.
+  // 안전하게 6회 동시 호출 × 3 batch = 총 18회. 각 batch 사이 400ms 대기.
   const variations = [
     keyword,
     `${keyword} 쿠팡`,
     `${keyword} 추천`,
     `${keyword} 인기`,
+    `${keyword} 베스트`,
+    `${keyword} 가성비`,
   ];
   const sorts: Array<'sim' | 'date' | 'asc'> = ['sim', 'date', 'asc'];
-  const pages = [1, 101, 201];
 
+  // 변형 6개 × sort 3개 = 18회 호출 (페이지는 start=1만, rate limit 회피)
   const callPlan: Array<{ kw: string; start: number; sort: 'sim' | 'date' | 'asc' }> = [];
   for (const kw of variations) {
     for (const sort of sorts) {
-      for (const start of pages) {
-        callPlan.push({ kw, start, sort });
-      }
+      callPlan.push({ kw, start: 1, sort });
     }
   }
 
-  const results = await Promise.all(
-    callPlan.map(({ kw, start, sort }) => searchNaverShopping(kw, start, 100, sort)),
-  );
+  // 6개씩 배치 처리, 배치 사이 400ms 대기 (네이버 초당 10회 한도 안전)
+  const BATCH_SIZE = 6;
+  const BATCH_DELAY_MS = 400;
+  const results: NaverShopItem[][] = [];
+  for (let i = 0; i < callPlan.length; i += BATCH_SIZE) {
+    const batch = callPlan.slice(i, i + BATCH_SIZE);
+    const batchResults = await Promise.all(
+      batch.map(({ kw, start, sort }) => searchNaverShopping(kw, start, 100, sort)),
+    );
+    results.push(...batchResults);
+    if (i + BATCH_SIZE < callPlan.length) {
+      await new Promise((r) => setTimeout(r, BATCH_DELAY_MS));
+    }
+  }
 
   // 쿠팡 상품만 필터링 (link 우선 — mallName 변형이 많아서)
   const coupangOnly = results.flat().filter((item) => {
