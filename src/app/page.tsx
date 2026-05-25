@@ -37,9 +37,13 @@ import {
   Palette,
   Car,
   Book,
+  LogOut,
+  Shield,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { ProductSkeleton } from "@/components/Skeleton";
+import { getBrowserClient } from "@/lib/supabase";
 
 const Sparkline = ({ data }: { data: number[] }) => {
   const [hoveredIndex, setHoveredIndex] = React.useState<number | null>(null);
@@ -208,6 +212,39 @@ const SellerLandscape = ({ products }: { products: Product[] }) => {
 };
 
 export default function SourcingDashboard() {
+  const router = useRouter();
+  const [authChecking, setAuthChecking] = useState(true);
+  const [currentUser, setCurrentUser] = useState<{ name: string; role: string } | null>(null);
+
+  useEffect(() => {
+    const supabase = getBrowserClient();
+    supabase.auth.getSession().then(async ({ data }) => {
+      const session = data.session;
+      if (!session) {
+        router.replace("/login");
+        return;
+      }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name, role, status")
+        .eq("id", session.user.id)
+        .single();
+      if (!profile || profile.status !== "approved") {
+        await supabase.auth.signOut();
+        router.replace("/login");
+        return;
+      }
+      setCurrentUser({ name: profile.name, role: profile.role });
+      setAuthChecking(false);
+    });
+  }, [router]);
+
+  const handleSignOut = async () => {
+    const supabase = getBrowserClient();
+    await supabase.auth.signOut();
+    router.replace("/login");
+  };
+
   const [keyword, setKeyword] = useState("");
   const [minPrice, setMinPrice] = useState("0");
   const [maxPrice, setMaxPrice] = useState("1000000");
@@ -793,6 +830,14 @@ export default function SourcingDashboard() {
     return "text-rose-400 bg-rose-50 ring-rose-500/20";
   };
 
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white text-slate-900">
       {/* Header */}
@@ -805,6 +850,29 @@ export default function SourcingDashboard() {
             <h1 className="text-xl font-bold tracking-tight text-slate-900">
               훈프로 <span className="text-indigo-600">소싱 파인더</span>
             </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {currentUser && (
+              <span className="text-xs font-black text-slate-600 px-3">
+                {currentUser.name} 님
+              </span>
+            )}
+            {currentUser?.role === "admin" && (
+              <a
+                href="/admin"
+                className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black transition-all"
+              >
+                <Shield className="w-3.5 h-3.5" />
+                관리자
+              </a>
+            )}
+            <button
+              onClick={handleSignOut}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-black text-slate-700 transition-all"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              로그아웃
+            </button>
           </div>
         </div>
       </nav>
