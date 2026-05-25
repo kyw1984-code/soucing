@@ -224,7 +224,7 @@ async function generateSignature(method: string, path: string, query: string) {
 async function fetchByKeyword(keyword: string): Promise<any[]> {
   const method = 'GET';
   const path = '/v2/providers/affiliate_open_api/apis/openapi/v1/products/search';
-  const query = `keyword=${encodeURIComponent(keyword)}&limit=100`;
+  const query = `keyword=${encodeURIComponent(keyword)}&limit=10`;
   const url = `https://api-gateway.coupang.com${path}?${query}`;
 
   const { timestamp, signature } = await generateSignature(method, path, query);
@@ -277,11 +277,18 @@ async function fetchByKeyword(keyword: string): Promise<any[]> {
  */
 async function fetchCoupangProducts(keyword: string): Promise<any[]> {
   // 다양한 변형 키워드로 검색 범위 확대 (중복 제거로 30개 이상 확보)
+  // 10개 변형 키워드 × limit=10 → 최대 100개 raw → 중복 제거 후 고유 상품
   const variations = [
     keyword,
     `${keyword} 추천`,
     `${keyword} 인기`,
-    `${keyword} 베스트`
+    `${keyword} 베스트`,
+    `${keyword} 신상`,
+    `${keyword} 가성비`,
+    `${keyword} 할인`,
+    `${keyword} 신제품`,
+    `${keyword} 후기`,
+    `${keyword} 리뷰`,
   ];
 
   // 병렬로 모든 변형 검색
