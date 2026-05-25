@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, Loader2, CheckCheck, X, RefreshCw, LogOut, CheckCircle2, Clock, Ban, Home } from "lucide-react";
+import { Shield, Loader2, CheckCheck, X, RefreshCw, LogOut, CheckCircle2, Clock, Ban, Home, ArrowLeft } from "lucide-react";
 import { getBrowserClient, Profile, ProfileStatus } from "@/lib/supabase";
 
 type Tab = ProfileStatus;
@@ -133,6 +133,14 @@ export default function AdminPage() {
       <nav className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/90 backdrop-blur-md">
         <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
+            <a
+              href="/"
+              title="메인 페이지로 돌아가기"
+              className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-black text-slate-700 transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              돌아가기
+            </a>
             <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center">
               <Shield className="text-white w-5 h-5" />
             </div>
