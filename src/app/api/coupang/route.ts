@@ -277,7 +277,7 @@ async function fetchByKeyword(keyword: string): Promise<any[]> {
  */
 async function fetchCoupangProducts(keyword: string): Promise<any[]> {
   // 다양한 변형 키워드로 검색 범위 확대 (중복 제거로 30개 이상 확보)
-  // 10개 변형 키워드 × limit=10 → 최대 100개 raw → 중복 제거 후 고유 상품
+  // 15개 변형 키워드 × limit=10 → 최대 150개 raw → 중복 제거 후 평균 100개 안팎
   const variations = [
     keyword,
     `${keyword} 추천`,
@@ -289,6 +289,11 @@ async function fetchCoupangProducts(keyword: string): Promise<any[]> {
     `${keyword} 신제품`,
     `${keyword} 후기`,
     `${keyword} 리뷰`,
+    `${keyword} 핫딜`,
+    `${keyword} 무료배송`,
+    `${keyword} 베스트셀러`,
+    `${keyword} 인기상품`,
+    `${keyword} 정품`,
   ];
 
   // 병렬로 모든 변형 검색
