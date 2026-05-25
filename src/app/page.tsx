@@ -214,7 +214,7 @@ const SellerLandscape = ({ products }: { products: Product[] }) => {
 export default function SourcingDashboard() {
   const router = useRouter();
   const [authChecking, setAuthChecking] = useState(true);
-  const [currentUser, setCurrentUser] = useState<{ name: string; role: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ name: string; isAdmin: boolean } | null>(null);
 
   useEffect(() => {
     const supabase = getBrowserClient();
@@ -226,7 +226,7 @@ export default function SourcingDashboard() {
       }
       const { data: profile } = await supabase
         .from("profiles")
-        .select("name, role, status")
+        .select("name, status")
         .eq("id", session.user.id)
         .single();
       if (!profile || profile.status !== "approved") {
@@ -234,7 +234,9 @@ export default function SourcingDashboard() {
         router.replace("/login");
         return;
       }
-      setCurrentUser({ name: profile.name, role: profile.role });
+      const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").trim().toLowerCase();
+      const email = (session.user.email || "").trim().toLowerCase();
+      setCurrentUser({ name: profile.name, isAdmin: !!adminEmail && email === adminEmail });
       setAuthChecking(false);
     });
   }, [router]);
@@ -857,7 +859,7 @@ export default function SourcingDashboard() {
                 {currentUser.name} 님
               </span>
             )}
-            {currentUser?.role === "admin" && (
+            {currentUser?.isAdmin && (
               <a
                 href="/admin"
                 className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-black transition-all"

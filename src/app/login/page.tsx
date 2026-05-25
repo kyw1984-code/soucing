@@ -27,7 +27,7 @@ export default function LoginPage() {
 
       const { data: profile, error: profileErr } = await supabase
         .from("profiles")
-        .select("status, role")
+        .select("status")
         .eq("id", data.user.id)
         .single();
 
@@ -48,7 +48,8 @@ export default function LoginPage() {
         return;
       }
 
-      if (profile.role === "admin") {
+      const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").trim().toLowerCase();
+      if (adminEmail && (data.user.email || "").trim().toLowerCase() === adminEmail) {
         router.push("/admin");
       } else {
         router.push("/");

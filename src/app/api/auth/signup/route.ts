@@ -30,13 +30,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    const isAdmin = adminEmail && email.trim().toLowerCase() === adminEmail;
+
     const { error: profileErr } = await admin.from('profiles').insert({
       id: created.user.id,
       email,
       name,
       phone: phone || null,
-      status: 'pending',
-      role: 'user',
+      status: isAdmin ? 'approved' : 'pending',
+      role: isAdmin ? 'admin' : 'user',
+      approved_at: isAdmin ? new Date().toISOString() : null,
     });
 
     if (profileErr) {
@@ -45,7 +49,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: profileErr.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, message: '가입 신청이 접수되었습니다. 관리자 승인 후 로그인 가능합니다.' });
+    return NextResponse.json({
+      ok: true,
+      autoApproved: isAdmin,
+      message: isAdmin
+        ? '관리자 계정으로 가입되어 자동 승인되었습니다.'
+        : '가입 신청이 접수되었습니다. 관리자 승인 후 로그인 가능합니다.',
+    });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || '서버 오류' }, { status: 500 });
   }

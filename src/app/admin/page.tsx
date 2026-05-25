@@ -26,12 +26,9 @@ export default function AdminPage() {
         router.replace("/login");
         return;
       }
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role, status")
-        .eq("id", session.user.id)
-        .single();
-      if (!profile || profile.role !== "admin") {
+      const adminEmail = (process.env.NEXT_PUBLIC_ADMIN_EMAIL || "").trim().toLowerCase();
+      const email = (session.user.email || "").trim().toLowerCase();
+      if (!adminEmail || email !== adminEmail) {
         router.replace("/");
         return;
       }
