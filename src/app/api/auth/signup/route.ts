@@ -33,6 +33,20 @@ export async function POST(request: NextRequest) {
     const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
     const isAdmin = adminEmail && email.trim().toLowerCase() === adminEmail;
 
+    // 자동 승인 설정 조회 (관리자가 토글로 변경 가능)
+    let autoApproveSetting = false;
+    try {
+      const { data: setting } = await admin
+        .from('system_settings')
+        .select('value')
+        .eq('key', 'auto_approve_signups')
+        .maybeSingle();
+      autoApproveSetting = setting?.value === 'true';
+    } catch {
+      // 설정 테이블이 없으면 false로 처리 (기존 동작 유지)
+    }
+
+    const approve = isAdmin || autoApproveSetting;
     const now = new Date();
     const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -41,9 +55,9 @@ export async function POST(request: NextRequest) {
       email,
       name,
       phone: phone || null,
-      status: isAdmin ? 'approved' : 'pending',
+      status: approve ? 'approved' : 'pending',
       role: isAdmin ? 'admin' : 'user',
-      approved_at: isAdmin ? now.toISOString() : null,
+      approved_at: approve ? now.toISOString() : null,
       expires_at: isAdmin ? null : expiresAt.toISOString(),
     });
 
@@ -55,10 +69,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      autoApproved: isAdmin,
+      autoApproved: approve,
       message: isAdmin
         ? '관리자 계정으로 가입되어 자동 승인되었습니다.'
-        : '가입 신청이 접수되었습니다. 관리자 승인 후 로그인 가능합니다.',
+        : approve
+          ? '가입이 완료되었습니다. 바로 로그인 가능합니다.'
+          : '가입 신청이 접수되었습니다. 관리자 승인 후 로그인 가능합니다.',
     });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message || '서버 오류' }, { status: 500 });
