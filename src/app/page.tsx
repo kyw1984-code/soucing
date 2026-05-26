@@ -274,12 +274,55 @@ export default function SourcingDashboard() {
     router.replace("/login");
   };
 
+  // 1688 이미지 검색 form submit (구매하기 액션)
+  const submit1688Search = (imageUrl: string) => {
+    if (!imageUrl) {
+      alert("이미지 없음");
+      return;
+    }
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "https://jungdari.com/search1688/image/string";
+    form.target = "_blank";
+    const sourceInput = document.createElement("input");
+    sourceInput.type = "hidden";
+    sourceInput.name = "source";
+    sourceInput.value = imageUrl;
+    const pageInput = document.createElement("input");
+    pageInput.type = "hidden";
+    pageInput.name = "beginPage";
+    pageInput.value = "1";
+    form.appendChild(sourceInput);
+    form.appendChild(pageInput);
+    document.body.appendChild(form);
+    form.submit();
+    document.body.removeChild(form);
+  };
+
+  // 구매하기 클릭: 오늘 그만보기 설정 없으면 팝업, 있으면 바로 1688 이동
+  const PURCHASE_POPUP_HIDE_KEY = "purchase_popup_hide_date";
+  const handlePurchaseClick = (product: Product) => {
+    const today = new Date().toISOString().slice(0, 10);
+    const hideUntil =
+      typeof window !== "undefined"
+        ? localStorage.getItem(PURCHASE_POPUP_HIDE_KEY)
+        : null;
+    if (hideUntil === today) {
+      submit1688Search(product.productImage);
+    } else {
+      setPurchasePopupProduct(product);
+    }
+  };
+
   const [keyword, setKeyword] = useState("");
   const [minPrice, setMinPrice] = useState("0");
   const [maxPrice, setMaxPrice] = useState("1000000");
 
   const [loading, setLoading] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
+
+  // Purchase popup (1688 검색 전 이벤트 안내)
+  const [purchasePopupProduct, setPurchasePopupProduct] = useState<Product | null>(null);
 
   // Sourcing states
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -1405,39 +1448,7 @@ export default function SourcingDashboard() {
                         </a>
                         <div className="flex gap-2">
                           <button
-                            onClick={() => {
-                              const imageUrl = product.productImage;
-
-                              if (!imageUrl) {
-                                alert("이미지 없음");
-                                return;
-                              }
-
-                              // form 생성
-                              const form = document.createElement("form");
-                              form.method = "POST";
-                              form.action = "https://jungdari.com/search1688/image/string";
-                              form.target = "_blank"; // 새창
-
-                              // source
-                              const sourceInput = document.createElement("input");
-                              sourceInput.type = "hidden";
-                              sourceInput.name = "source";
-                              sourceInput.value = imageUrl;
-
-                              // beginPage
-                              const pageInput = document.createElement("input");
-                              pageInput.type = "hidden";
-                              pageInput.name = "beginPage";
-                              pageInput.value = "1";
-
-                              form.appendChild(sourceInput);
-                              form.appendChild(pageInput);
-
-                              document.body.appendChild(form);
-                              form.submit();
-                              document.body.removeChild(form);
-                            }}
+                            onClick={() => handlePurchaseClick(product)}
                             className="flex-1 py-3 bg-blue-50 rounded-xl text-[11px] font-bold text-blue-600 flex items-center justify-center gap-2 hover:bg-blue-100 transition-colors"
                           >
                             구매하기
@@ -1605,6 +1616,117 @@ export default function SourcingDashboard() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* 구매하기 안내 팝업 */}
+      <AnimatePresence>
+        {purchasePopupProduct && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setPurchasePopupProduct(null)}
+              className="fixed inset-0 z-[80] bg-slate-900/50 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="fixed inset-0 m-auto z-[90] w-[92%] max-w-[480px] h-fit max-h-[90vh] bg-white rounded-[28px] shadow-[0_24px_80px_-12px_rgba(0,0,0,0.3)] border border-slate-200 overflow-hidden flex flex-col"
+            >
+              <div className="px-7 pt-7 pb-2 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-widest text-indigo-500">
+                    Hoonpro Special
+                  </p>
+                  <h3 className="text-xl font-black text-slate-900 mt-1.5">
+                    쇼크트리 추천인 가입 이벤트 안내
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setPurchasePopupProduct(null)}
+                  aria-label="닫기"
+                  className="p-1.5 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-all"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="px-7 pb-6 pt-2 flex flex-col gap-5">
+                <div className="bg-indigo-50 border border-indigo-100 rounded-2xl px-5 py-4">
+                  <p className="text-[13px] font-bold text-slate-700 leading-relaxed">
+                    회원가입 후{" "}
+                    <span className="inline-block px-2 py-0.5 bg-indigo-600 text-white font-black rounded-md text-xs tracking-wide">
+                      hoonpro05
+                    </span>{" "}
+                    추천인 코드를 입력하면 아래 추가 혜택이 제공됩니다.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
+                      1. 대상
+                    </p>
+                    <p className="text-[13px] font-bold text-slate-700 leading-relaxed">
+                      쇼크트리 추천인 가입자 중 중달이 구매대행 PRO 이용 고객
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1.5">
+                      2. 혜택
+                    </p>
+                    <ul className="flex flex-col gap-2 text-[13px] font-bold text-slate-700 leading-relaxed">
+                      <li className="flex items-start gap-2">
+                        <span className="shrink-0 text-indigo-500 font-black">①</span>
+                        <span>
+                          LCL 중달이 사업자 통관 시 통관수수료 면제
+                          <span className="text-slate-400 font-bold ml-1">(3만 원 상당)</span>
+                        </span>
+                      </li>
+                      <li className="flex items-start gap-2">
+                        <span className="shrink-0 text-indigo-500 font-black">②</span>
+                        <span>
+                          OEM 공장조사 1회 무료 제공
+                          <span className="text-slate-400 font-bold ml-1">(5만 원 상당)</span>
+                        </span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div className="px-7 pb-7 pt-2 flex gap-2 border-t border-slate-100">
+                <button
+                  onClick={() => {
+                    const today = new Date().toISOString().slice(0, 10);
+                    try {
+                      localStorage.setItem(PURCHASE_POPUP_HIDE_KEY, today);
+                    } catch {}
+                    const product = purchasePopupProduct;
+                    setPurchasePopupProduct(null);
+                    if (product) submit1688Search(product.productImage);
+                  }}
+                  className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-all"
+                >
+                  오늘 그만보기
+                </button>
+                <button
+                  onClick={() => {
+                    const product = purchasePopupProduct;
+                    setPurchasePopupProduct(null);
+                    if (product) submit1688Search(product.productImage);
+                  }}
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black transition-all shadow-sm"
+                >
+                  창닫기
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <footer className="w-full border-t border-slate-200 bg-white/70 backdrop-blur-md">
