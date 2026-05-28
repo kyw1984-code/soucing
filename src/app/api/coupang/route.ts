@@ -69,8 +69,11 @@ export async function GET(request: NextRequest) {
     }
 
     // 1) 캐시 miss이면 Naver Shopping API로 쿠팡 상품 조회
+    let naverDiagnostic: any = null;
     if (coupangData.length === 0) {
-      coupangData = await fetchCoupangViaNaver(keyword);
+      const naverResult = await fetchCoupangViaNaver(keyword);
+      coupangData = naverResult.items;
+      naverDiagnostic = naverResult.diagnostic;
       debug.api = coupangData.length;
       console.log(`[Search Handler] naver=${debug.api}`);
     }
@@ -96,7 +99,8 @@ export async function GET(request: NextRequest) {
           keyword,
           apiDataCount: 0,
           source: 'naver',
-          message: 'Naver Shopping returned 0 Coupang products. Possible: rate limit, missing NAVER_CLIENT_ID/SECRET, or no Coupang listings for this keyword.'
+          naver: naverDiagnostic,
+          message: 'Naver Shopping returned 0 Coupang products. See `naver` diagnostic for cause.'
         }
       }, { status: 500 });
     }
