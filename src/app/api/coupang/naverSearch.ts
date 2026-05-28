@@ -55,6 +55,8 @@ export interface NaverDiagnostic {
   coupangCount: number;
   uniqueCount: number;
   topMalls: string[];
+  idExtraction: { coupang: number; naver: number; noId: number };
+  sampleCoupangLink: string | null;
 }
 
 interface CallResult {
@@ -117,9 +119,20 @@ function stripHtmlAndDecode(s: string): string {
 }
 
 function extractCoupangProductId(link: string): string | null {
-  // https://www.coupang.com/vp/products/12345?... → "12345"
-  const m = link.match(/\/vp\/products\/(\d+)/);
-  return m ? m[1] : null;
+  if (!link) return null;
+  // 쿠팡 상품 URL 다양한 패턴 모두 시도
+  const patterns = [
+    /\/vp\/products\/(\d+)/,    // www.coupang.com/vp/products/12345
+    /\/np\/products\/(\d+)/,    // 모바일/대체 경로
+    /products\/(\d+)/,          // 범용
+    /productId=(\d+)/i,         // 쿼리 파라미터
+    /pid=(\d+)/i,               // 쿠팡 단축 링크
+  ];
+  for (const p of patterns) {
+    const m = link.match(p);
+    if (m) return m[1];
+  }
+  return null;
 }
 
 function detectDeliveryType(title: string): 'rocket' | 'jet' | 'general' {
@@ -144,6 +157,8 @@ export async function fetchCoupangViaNaver(
     coupangCount: 0,
     uniqueCount: 0,
     topMalls: [],
+    idExtraction: { coupang: 0, naver: 0, noId: 0 },
+    sampleCoupangLink: null,
   };
 
   if (!NAVER_CLIENT_ID || !NAVER_CLIENT_SECRET) {
@@ -198,12 +213,24 @@ export async function fetchCoupangViaNaver(
     return false;
   });
   diagnostic.coupangCount = coupangOnly.length;
+  diagnostic.sampleCoupangLink = coupangOnly[0]?.link?.slice(0, 120) || null;
 
   const seen = new Set<string>();
   const products: any[] = [];
   for (const item of coupangOnly) {
-    const productId = extractCoupangProductId(item.link);
-    if (!productId || seen.has(productId)) continue;
+    // 1순위: 쿠팡 URL에서 productId 추출
+    let productId = extractCoupangProductId(item.link);
+    if (productId) {
+      diagnostic.idExtraction.coupang++;
+    } else if (item.productId) {
+      // 2순위: Naver catalog ID로 폴백 (쿠팡 URL 패턴이 아닐 때)
+      productId = String(item.productId);
+      diagnostic.idExtraction.naver++;
+    } else {
+      diagnostic.idExtraction.noId++;
+      continue;
+    }
+    if (seen.has(productId)) continue;
     seen.add(productId);
 
     const name = stripHtmlAndDecode(item.title);
@@ -211,7 +238,7 @@ export async function fetchCoupangViaNaver(
     if (!name || price <= 0) continue;
 
     products.push({
-      productId: parseInt(productId, 10),
+      productId: parseInt(productId, 10) || productId,
       productName: name,
       productPrice: price,
       productImage: item.image,
