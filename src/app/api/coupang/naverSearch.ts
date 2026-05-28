@@ -37,17 +37,24 @@ interface NaverShopItem {
   category4: string;
 }
 
+export interface NaverCallDiag {
+  query: string;
+  sort: string;
+  status: number | null;
+  errorText: string | null;
+  rawCount: number;
+  retries: number;
+}
+
 export interface NaverDiagnostic {
   envMissing: boolean;
   idLen: number;
   secretLen: number;
-  httpStatus: number | null;
-  httpError: string | null;
-  rawCount: number;
+  calls: NaverCallDiag[];
+  totalRaw: number;
   coupangCount: number;
   uniqueCount: number;
   topMalls: string[];
-  retries: number;
 }
 
 interface CallResult {
@@ -132,13 +139,11 @@ export async function fetchCoupangViaNaver(
     envMissing: false,
     idLen: NAVER_CLIENT_ID.length,
     secretLen: NAVER_CLIENT_SECRET.length,
-    httpStatus: null,
-    httpError: null,
-    rawCount: 0,
+    calls: [],
+    totalRaw: 0,
     coupangCount: 0,
     uniqueCount: 0,
     topMalls: [],
-    retries: 0,
   };
 
   if (!NAVER_CLIENT_ID || !NAVER_CLIENT_SECRET) {
@@ -148,15 +153,37 @@ export async function fetchCoupangViaNaver(
   }
   console.log(`[NAVER_START] id_len=${diagnostic.idLen} secret_len=${diagnostic.secretLen}`);
 
-  const callResult = await searchNaverShopping(keyword, 1, 100, 'sim');
-  diagnostic.httpStatus = callResult.status;
-  diagnostic.httpError = callResult.errorText;
-  diagnostic.retries = callResult.retries;
-  diagnostic.rawCount = callResult.items.length;
+  // 쿠팡 상품이 sim 정렬 100위 내에 거의 안 잡히는 키워드(패션·잡화 등) 대응:
+  // (1) 원본 키워드, (2) "{keyword} 쿠팡" 명시 검색, (3) date 정렬로 신상품 풀
+  // 순차 호출 + 200ms 간격으로 429 방지. 내부 retry까지 합쳐 안정성 확보.
+  const queries: { kw: string; sort: 'sim' | 'date' }[] = [
+    { kw: keyword, sort: 'sim' },
+    { kw: `${keyword} 쿠팡`, sort: 'sim' },
+    { kw: keyword, sort: 'date' },
+  ];
+
+  const allItems: NaverShopItem[] = [];
+  for (let i = 0; i < queries.length; i++) {
+    const q = queries[i];
+    const r = await searchNaverShopping(q.kw, 1, 100, q.sort);
+    diagnostic.calls.push({
+      query: q.kw,
+      sort: q.sort,
+      status: r.status,
+      errorText: r.errorText,
+      rawCount: r.items.length,
+      retries: r.retries,
+    });
+    allItems.push(...r.items);
+    if (i < queries.length - 1) {
+      await new Promise((res) => setTimeout(res, 200));
+    }
+  }
+  diagnostic.totalRaw = allItems.length;
 
   // 상위 mallName 카운트 (어떤 몰이 응답에 많은지 확인용)
   const mallCounts: Record<string, number> = {};
-  for (const item of callResult.items) {
+  for (const item of allItems) {
     const mall = (item.mallName || '(empty)').slice(0, 30);
     mallCounts[mall] = (mallCounts[mall] || 0) + 1;
   }
@@ -165,7 +192,7 @@ export async function fetchCoupangViaNaver(
     .slice(0, 5)
     .map(([m, c]) => `${m}(${c})`);
 
-  const coupangOnly = callResult.items.filter((item) => {
+  const coupangOnly = allItems.filter((item) => {
     if (item.link && /coupang\.com/i.test(item.link)) return true;
     if (item.mallName && /쿠팡|coupang/i.test(item.mallName)) return true;
     return false;
@@ -202,7 +229,7 @@ export async function fetchCoupangViaNaver(
   diagnostic.uniqueCount = products.length;
 
   console.log(
-    `[Naver API] keyword="${keyword}" status=${diagnostic.httpStatus} raw=${diagnostic.rawCount} coupang=${diagnostic.coupangCount} unique=${diagnostic.uniqueCount}`,
+    `[Naver API] keyword="${keyword}" calls=${diagnostic.calls.length} raw=${diagnostic.totalRaw} coupang=${diagnostic.coupangCount} unique=${diagnostic.uniqueCount}`,
   );
   return { items: products, diagnostic };
 }
