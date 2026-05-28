@@ -1,14 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-// Naver/Playwright는 Vercel 환경에서 rate limit/binary 이슈로 비활성화.
-// 쿠팡 파트너스 API + Supabase 캐싱 조합으로 통일.
+import { fetchCoupangViaNaver } from './naverSearch';
+// Coupang Partners API는 이용 제한 누적으로 사용 불가. Naver Shopping API 경유로 전환.
 
-// Use default Node.js runtime for better stability on Windows dev environments
-
-// Environment variables
-const ACCESS_KEY = (process.env.COUPANG_PARTNERS_ACCESS_KEY || '').trim();
-const SECRET_KEY = (process.env.COUPANG_PARTNERS_SECRET_KEY || '').trim();
-// SUPABASE_URL이 없으면 NEXT_PUBLIC_SUPABASE_URL로 fallback
 const SUPABASE_URL = (
   process.env.SUPABASE_URL ||
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -43,10 +37,12 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log(`[Coupang API Handler] Start search for: "${keyword}"`);
+    console.log(`[Search Handler] Start search for: "${keyword}"`);
 
     const debug = { cache: 'MISS', api: 0 };
-    const CACHE_TTL_MS = 5 * 60 * 1000; // 5분 캐시
+    // Naver Shopping API는 일일 25,000 호출 한도가 있고 IP 공유 환경에서 429가 잦아
+    // 캐시를 길게 유지해 호출량을 최소화.
+    const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24시간
 
     // 0) 캐시 조회 (5분 이내면 즉시 응답)
     let coupangData: any[] = [];
@@ -72,18 +68,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // 1) 캐시 miss이면 쿠팡 파트너스 API 호출
+    // 1) 캐시 miss이면 Naver Shopping API로 쿠팡 상품 조회
     if (coupangData.length === 0) {
-      if (!ACCESS_KEY || !SECRET_KEY) {
-        return NextResponse.json(
-          { error: '쿠팡 파트너스 API 키가 설정되지 않았습니다.' },
-          { status: 500 },
-        );
-      }
-      coupangData = await fetchCoupangProducts(keyword);
-      coupangData = coupangData.map((item: any) => ({ ...item, source: 'api' }));
+      coupangData = await fetchCoupangViaNaver(keyword);
       debug.api = coupangData.length;
-      console.log(`[Coupang API Handler] api=${debug.api}`);
+      console.log(`[Search Handler] naver=${debug.api}`);
     }
 
     // Save to Supabase Cache (캐시 miss 일 때만 갱신)
@@ -97,36 +86,30 @@ export async function GET(request: NextRequest) {
       } catch (e) {}
     }
 
-    // 3. (REMOVED) Enrichment moved to on-demand sourcing analysis to speed up initial response.
-    // Use raw coupangData directly.
-    
-    // 디버깅: 데이터가 있는지 먼저 확인
-    console.log(`[Coupang API Handler] Raw data count: ${coupangData.length}`);
+    console.log(`[Search Handler] Raw data count: ${coupangData.length}`);
 
     if (coupangData.length === 0) {
-      console.error(`[Coupang API Handler] No data from API!`);
+      console.error(`[Search Handler] No data from Naver API!`);
       return NextResponse.json({
-        error: 'API에서 데이터를 가져오지 못했습니다. 쿠팡 API 상태를 확인해주세요.',
+        error: '검색 결과를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.',
         debug: {
           keyword,
           apiDataCount: 0,
-          message: 'Both scraper and API returned 0 results'
+          source: 'naver',
+          message: 'Naver Shopping returned 0 Coupang products. Possible: rate limit, missing NAVER_CLIENT_ID/SECRET, or no Coupang listings for this keyword.'
         }
       }, { status: 500 });
     }
 
-    // 4. Scored and Filtered
     let finalResult = filterAndScoreProducts(coupangData, minPrice, maxPrice, keyword);
 
-    // 5. CLEAN IMAGE URLS for 1688 Search Stability (ads-partners → 실제 CDN URL 해소)
-    // 이미 CDN URL인 경우 불필요한 네트워크 요청 생략
     finalResult = finalResult.map((product) => ({
       ...product,
       productImage: cleanCoupangImageUrl(product.productImage, product.productId),
     }));
 
     if (finalResult.length === 0) {
-      console.warn(`[Coupang API Handler] No products after filtering.`);
+      console.warn(`[Search Handler] No products after filtering.`);
       return NextResponse.json({
         error: '필터링 후 검색 결과가 없습니다.',
         debug: {
@@ -135,38 +118,25 @@ export async function GET(request: NextRequest) {
           filteredCount: 0,
           message: 'All products filtered out'
         }
-      }, { status: 200 }); // 200으로 변경 (데이터는 있었으나 필터링됨)
+      }, { status: 200 });
     }
 
-    console.log(`[Coupang API Handler] ${finalResult.length} items remain after filtering.`);
+    console.log(`[Search Handler] ${finalResult.length} items remain after filtering.`);
     return NextResponse.json(finalResult, {
       headers: {
         'x-cache': debug.cache,
         'x-debug-api': String(debug.api),
         'x-debug-final': String(finalResult.length),
+        'x-debug-source': 'naver',
         'x-debug-supabase': supabase ? 'on' : `off:${supabaseInitErr.slice(0, 60)}`,
       },
     });
 
   } catch (error: any) {
-    console.error('[Coupang API Fatal Error]:', error.message);
-    return NextResponse.json({ 
-      error: error.message || '쿠팡 API 호출 중 오류가 발생했습니다.' 
+    console.error('[Search Fatal Error]:', error.message);
+    return NextResponse.json({
+      error: error.message || '검색 중 오류가 발생했습니다.'
     }, { status: 500 });
-  }
-}
-
-/**
- * Ensures it returns a standard Coupang CDN URL (thumbnail.coupangcdn.com)
- * compatible with 1688/AliPrice bots. Handles restricted ads-partners URLs.
- */
-async function resolveImageUrl(imageUrl: string): Promise<string> {
-  if (!imageUrl || !imageUrl.includes('ads-partners.coupang.com')) return imageUrl;
-  try {
-    const res = await fetch(imageUrl, { method: 'HEAD', redirect: 'follow' });
-    return res.url || imageUrl;
-  } catch {
-    return imageUrl;
   }
 }
 
@@ -192,152 +162,6 @@ function cleanCoupangImageUrl(imageUrl: string, productId: string | number): str
 
   return imageUrl.startsWith('//') ? 'https:' + imageUrl : imageUrl;
 }
-
-
-
-
-/**
- * Generates HMAC signature using Web Crypto API (Edge compatible)
- */
-async function generateSignature(method: string, path: string, query: string) {
-  const now = new Date();
-  
-  const yy = now.getUTCFullYear().toString().substring(2);
-  const mm = (now.getUTCMonth() + 1).toString().padStart(2, '0');
-  const dd = now.getUTCDate().toString().padStart(2, '0');
-  const hh = now.getUTCHours().toString().padStart(2, '0');
-  const min = now.getUTCMinutes().toString().padStart(2, '0');
-  const ss = now.getUTCSeconds().toString().padStart(2, '0');
-  
-  const timestamp = `${yy}${mm}${dd}T${hh}${min}${ss}Z`;
-  const message = timestamp + method + path + query;
-
-  const encoder = new TextEncoder();
-  const keyData = encoder.encode(SECRET_KEY);
-  const messageData = encoder.encode(message);
-
-  const cryptoKey = await crypto.subtle.importKey(
-    'raw',
-    keyData,
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-
-  const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, messageData);
-  const signatureArray = Array.from(new Uint8Array(signatureBuffer));
-  const signature = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  
-  return { timestamp, signature };
-}
-
-/**
- * Fetches products for a single keyword from Coupang Partners API
- */
-async function fetchByKeyword(keyword: string): Promise<any[]> {
-  const method = 'GET';
-  const path = '/v2/providers/affiliate_open_api/apis/openapi/v1/products/search';
-  const query = `keyword=${encodeURIComponent(keyword)}&limit=10`;
-  const url = `https://api-gateway.coupang.com${path}?${query}`;
-
-  const { timestamp, signature } = await generateSignature(method, path, query);
-  const authorization = `CEA algorithm=HmacSHA256, access-key=${ACCESS_KEY}, signed-date=${timestamp}, signature=${signature}`;
-
-  console.log(`[Coupang API Calling] keyword="${keyword}"`);
-
-  const response = await fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': authorization,
-    },
-  });
-
-  const responseText = await response.text();
-
-  if (!response.ok) {
-    console.error(`[Coupang API HTTP Error] ${response.status}: ${responseText}`);
-    return [];
-  }
-
-  try {
-    const data = JSON.parse(responseText);
-    if (!data) return [];
-
-    if (data.rCode && data.rCode !== "0000" && data.rCode !== "0" && data.rCode !== 0) {
-      console.error(`[Coupang API Result Error] rCode: ${data.rCode}, Msg: ${data.rMessage}`);
-      return [];
-    }
-
-    let items: any[] = [];
-    if (data.data && data.data.productData) items = data.data.productData;
-    else if (data.data && data.data.productDtos) items = data.data.productDtos;
-    else if (data.productData) items = data.productData;
-    else if (data.productDtos) items = data.productDtos;
-    else if (Array.isArray(data.data)) items = data.data;
-    else if (Array.isArray(data)) items = data;
-
-    console.log(`[Coupang API Parser] keyword="${keyword}" extracted ${items.length} items`);
-    return Array.isArray(items) ? items : [];
-  } catch (e: any) {
-    console.error(`[Coupang API Parser] parse error:`, e.message);
-    return [];
-  }
-}
-
-/**
- * 키워드 변형을 만들어 여러 번 검색 후 productId 기준 중복 제거, 최소 30개 이상 확보
- */
-async function fetchCoupangProducts(keyword: string): Promise<any[]> {
-  // 다양한 변형 키워드로 검색 범위 확대 (중복 제거로 30개 이상 확보)
-  // 15개 변형 키워드 × limit=10 → 최대 150개 raw → 중복 제거 후 평균 100개 안팎
-  const variations = [
-    keyword,
-    `${keyword} 추천`,
-    `${keyword} 인기`,
-    `${keyword} 베스트`,
-    `${keyword} 신상`,
-    `${keyword} 가성비`,
-    `${keyword} 할인`,
-    `${keyword} 신제품`,
-    `${keyword} 후기`,
-    `${keyword} 리뷰`,
-    `${keyword} 핫딜`,
-    `${keyword} 무료배송`,
-    `${keyword} 베스트셀러`,
-    `${keyword} 인기상품`,
-    `${keyword} 정품`,
-  ];
-
-  // 병렬로 모든 변형 검색
-  const results = await Promise.all(
-    variations.map(kw => fetchByKeyword(kw))
-  );
-
-  // productId 기준 중복 제거 (원본 키워드 결과 우선)
-  const seen = new Set<number>();
-  const combined: any[] = [];
-  for (const items of results) {
-    for (const item of items) {
-      if (item && item.productId && !seen.has(item.productId)) {
-        seen.add(item.productId);
-        combined.push(item);
-      }
-    }
-  }
-
-  // rank 재부여
-  combined.forEach((item, i) => { item.rank = i + 1; });
-
-  console.log(`[Coupang API] Total fetched: ${results.flat().length}, unique: ${combined.length}`);
-  return combined;
-}
-
-
-
-
-// Note: enrichWithScrapedReviews has been replaced by enrichProductDetails in playwrightSearch.ts
-
 
 /**
  * Data filtering and scoring logic
