@@ -139,13 +139,14 @@ interface Product {
   ratingCount?: number;
   isRocket?: boolean;
   deliveryType?: "rocket" | "jet" | "general" | "rocket_fallback";
+  reviewEnriched?: boolean; // 실제 쿠팡 리뷰수 보강 성공 여부
   estimated1688Price?: number; // 위안화 예상 원가
   calculated: {
     saleIndex: number;
     competitionStrength: number;
     sourcingScore: number;
     opportunityScore: number;
-    grade: "Excellent" | "Good" | "Bad";
+    grade: "Great" | "Excellent" | "Good" | "Bad";
   };
 }
 
@@ -315,7 +316,7 @@ export default function SourcingDashboard() {
   };
 
   const [keyword, setKeyword] = useState("");
-  const [minPrice, setMinPrice] = useState("0");
+  const [minPrice, setMinPrice] = useState("15000");
   const [maxPrice, setMaxPrice] = useState("1000000");
 
   const [loading, setLoading] = useState(false);
@@ -337,8 +338,12 @@ export default function SourcingDashboard() {
   } | null>(null);
 
   const [sortBy, setSortBy] = useState<
-    "sourcingScore" | "saleIndex" | "competitionStrength" | "productPrice"
-  >("sourcingScore");
+    | "saleIndex"
+    | "ratingCount"
+    | "sourcingScore"
+    | "competitionStrength"
+    | "productPrice"
+  >("saleIndex");
   const [gradeFilter, setGradeFilter] = useState<
     "all" | "Great" | "Excellent" | "Good" | "Bad"
   >("all");
@@ -914,12 +919,21 @@ export default function SourcingDashboard() {
   const displayProducts = [...products]
     .filter((p) => gradeFilter === "all" || p.calculated.grade === gradeFilter)
     .sort((a, b) => {
-      if (sortBy === "productPrice") return a.productPrice - b.productPrice;
-      if (sortBy === "competitionStrength")
-        return (
-          a.calculated.competitionStrength - b.calculated.competitionStrength
-        );
-      return (b.calculated as any)[sortBy] - (a.calculated as any)[sortBy];
+      let primary = 0;
+      if (sortBy === "productPrice") primary = a.productPrice - b.productPrice;
+      else if (sortBy === "competitionStrength")
+        primary =
+          a.calculated.competitionStrength - b.calculated.competitionStrength;
+      else if (sortBy === "ratingCount")
+        primary = (b.ratingCount || 0) - (a.ratingCount || 0);
+      else primary = (b.calculated as any)[sortBy] - (a.calculated as any)[sortBy];
+      if (primary !== 0) return primary;
+      // 결정적 tie-break: 리뷰수 → 가격 → productId
+      const r = (b.ratingCount || 0) - (a.ratingCount || 0);
+      if (r !== 0) return r;
+      const p = a.productPrice - b.productPrice;
+      if (p !== 0) return p;
+      return (Number(a.productId) || 0) - (Number(b.productId) || 0);
     });
 
   const handleExportCSV = () => {
@@ -1324,7 +1338,7 @@ export default function SourcingDashboard() {
         </AnimatePresence>
 
         {!loading && products.length > 0 && (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-1.5 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
               {(["all", "Great", "Excellent", "Good", "Bad"] as const).map(
                 (g) => (
@@ -1337,6 +1351,20 @@ export default function SourcingDashboard() {
                   </button>
                 ),
               )}
+            </div>
+            <div className="flex items-center gap-2 bg-white rounded-xl px-3 py-1.5 border border-slate-200 shadow-sm">
+              <ArrowUpDown className="w-3.5 h-3.5 text-slate-400" />
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                className="text-xs font-bold text-slate-700 bg-transparent outline-none cursor-pointer"
+              >
+                <option value="saleIndex">판매지수순 (리뷰·인기)</option>
+                <option value="ratingCount">리뷰수 많은순</option>
+                <option value="sourcingScore">소싱점수순</option>
+                <option value="competitionStrength">경쟁 낮은순</option>
+                <option value="productPrice">가격 낮은순</option>
+              </select>
             </div>
           </div>
         )}
@@ -1400,9 +1428,25 @@ export default function SourcingDashboard() {
                     </a>
 
                     <div className="p-5 flex-1 flex flex-col">
-                      <h3 className="font-bold text-[14px] text-slate-900 line-clamp-2 mb-4 h-10 leading-snug">
+                      <h3 className="font-bold text-[14px] text-slate-900 line-clamp-2 mb-2 h-10 leading-snug">
                         {product.productName}
                       </h3>
+                      <div className="flex items-center gap-2 mb-3">
+                        {product.reviewEnriched ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-black ring-1 ring-emerald-500/20">
+                            <Star className="w-3 h-3 fill-emerald-500 text-emerald-500" />
+                            {(product.rating || 0).toFixed(1)} · 리뷰 {(product.ratingCount || 0).toLocaleString()}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-50 text-slate-400 text-[10px] font-bold ring-1 ring-slate-200">
+                            <MessageSquare className="w-3 h-3" />
+                            리뷰 미확인
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-400 font-bold">
+                          판매지수 {product.calculated.saleIndex}
+                        </span>
+                      </div>
                       <div className="flex flex-col gap-1.5 mb-4">
                         <div className="flex justify-between items-center">
                           <span className="text-lg font-black text-indigo-600">
