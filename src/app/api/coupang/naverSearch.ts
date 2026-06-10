@@ -188,9 +188,9 @@ export async function fetchCoupangViaNaver(
     { kw: `${keyword} 쿠팡`, sort: 'sim' },
     { kw: keyword, sort: 'date' },
   ];
-  // 각 쿼리를 1페이지(1~100)와 2페이지(101~200)로 호출해 후보 풀 확대.
-  // 101~200위 구간은 소형/노네임 셀러가 많아 노브랜드 일반상품 비중이 높다.
-  const pageStarts = [1, 101];
+  // 각 쿼리를 1~4페이지(1~400위)로 호출해 후보 풀 확대.
+  // 하위 구간으로 갈수록 소형/노네임 셀러가 많아 노브랜드 일반상품 비중이 높다.
+  const pageStarts = [1, 101, 201, 301];
 
   const allItems: NaverShopItem[] = [];
   // 쿼리 × 페이지 조합을 순차 호출 (200ms 간격으로 429 방지)
