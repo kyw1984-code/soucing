@@ -135,6 +135,18 @@ function extractCoupangProductId(link: string): string | null {
   return null;
 }
 
+/**
+ * 네이버→쿠팡 리디렉트 링크(link.coupang.com/re/...?pageKey=)에서 pageKey 추출.
+ * pageKey는 쿠팡 "상품 페이지" 식별자라 색상/사이즈 옵션(itemId/vendorItemId)이 달라도
+ * 동일 상품이면 같은 값을 가진다 → 변형 중복 제거(dedup)의 핵심 키.
+ * 선행 0이 있을 수 있어 문자열 그대로 반환(숫자 변환 시 충돌 방지).
+ */
+function extractCoupangPageKey(link: string): string | null {
+  if (!link) return null;
+  const m = link.match(/[?&]pageKey=(\d+)/i);
+  return m ? m[1] : null;
+}
+
 function detectDeliveryType(title: string): 'rocket' | 'jet' | 'general' {
   const lower = title.toLowerCase();
   if (lower.includes('판매자로켓') || lower.includes('로켓그로스')) return 'jet';
@@ -229,12 +241,12 @@ export async function fetchCoupangViaNaver(
   const products: any[] = [];
   for (const item of coupangOnly) {
     const itemBrand = stripHtmlAndDecode(item.brand || item.maker || '');
-    // 1순위: 쿠팡 URL에서 productId 추출
-    let productId = extractCoupangProductId(item.link);
+    // 1순위: pageKey (색상/사이즈 변형을 동일 상품으로 묶음) → 2순위: 쿠팡 vp productId
+    let productId = extractCoupangPageKey(item.link) || extractCoupangProductId(item.link);
     if (productId) {
       diagnostic.idExtraction.coupang++;
     } else if (item.productId) {
-      // 2순위: Naver catalog ID로 폴백 (쿠팡 URL 패턴이 아닐 때)
+      // 3순위: Naver catalog ID로 폴백 (쿠팡 URL 패턴이 아닐 때)
       productId = String(item.productId);
       diagnostic.idExtraction.naver++;
     } else {
@@ -242,8 +254,8 @@ export async function fetchCoupangViaNaver(
       continue;
     }
     if (byId.has(productId)) {
-      // 같은 상품이 다른 쿼리/페이지에서 brand 있음/없음으로 섞여 들어올 수 있음.
-      // 기존 항목 brand가 비었고 이번 항목에 brand가 있으면 보강 (브랜드 판정이 순서에 안 좌우되게).
+      // 이미 본 상품(= 색상/사이즈만 다른 변형 또는 다른 쿼리/페이지 중복) → 하나만 노출.
+      // 기존 항목 brand가 비었고 이번 항목에 brand가 있으면 보강(브랜드 판정이 순서에 안 좌우되게).
       const prev = byId.get(productId);
       if (!prev.brand && itemBrand) prev.brand = itemBrand;
       continue;
