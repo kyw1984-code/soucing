@@ -308,6 +308,7 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
   // 사용자가 명시적으로 브랜드를 검색한 경우엔 브랜드 필터 건너뜀
   const searchTargetsBrand = BRAND_EXCLUDE_KEYWORDS.some(b => searchLower.includes(b.toLowerCase()));
   let brandRemovedCount = 0;
+  let brandFieldRemovedCount = 0;
 
   const filtered = items.filter((item) => {
     if (!item || typeof item !== 'object') return false;
@@ -319,7 +320,7 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
     // 1. Price Filter
     if (price < minPrice || price > maxPrice) return false;
 
-    // 2. Brand Filter — 사용자가 명시적으로 검색한 게 아니면 브랜드 상품 제외
+    // 2. Brand Keyword Filter — 사용자가 명시적으로 검색한 게 아니면 알려진 브랜드 상품 제외
     if (!searchTargetsBrand) {
       const matchedBrand = BRAND_EXCLUDE_KEYWORDS.find(b => {
         const bLower = b.toLowerCase();
@@ -327,6 +328,18 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
       });
       if (matchedBrand) {
         brandRemovedCount++;
+        return false;
+      }
+    }
+
+    // 2-2. Brand Field Filter — 네이버 brand/maker가 있으면 브랜드샵/제조사 상품으로 보고 제외.
+    //      단, 사용자가 그 브랜드를 직접 검색한 경우(검색어 ↔ brand 포함관계)는 보존.
+    if (brand) {
+      const searchMatchesThisBrand =
+        searchTargetsBrand ||
+        (searchLower.length > 0 && (searchLower.includes(brand) || brand.includes(searchLower)));
+      if (!searchMatchesThisBrand) {
+        brandFieldRemovedCount++;
         return false;
       }
     }
@@ -354,7 +367,7 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
     return true;
   });
 
-  console.log(`[Filter] ${filtered.length} items passed filter (brand removed: ${brandRemovedCount}${searchTargetsBrand ? ', brand filter skipped — search targets a brand' : ''})`);
+  console.log(`[Filter] ${filtered.length} items passed filter (brand-keyword removed: ${brandRemovedCount}, brand-field removed: ${brandFieldRemovedCount}${searchTargetsBrand ? ', brand filter skipped — search targets a brand' : ''})`);
 
   const scored = filtered.map((item) => {
     const price = item.productPrice || 1;

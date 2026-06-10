@@ -176,21 +176,31 @@ export async function fetchCoupangViaNaver(
     { kw: `${keyword} 쿠팡`, sort: 'sim' },
     { kw: keyword, sort: 'date' },
   ];
+  // 각 쿼리를 1페이지(1~100)와 2페이지(101~200)로 호출해 후보 풀 확대.
+  // 101~200위 구간은 소형/노네임 셀러가 많아 노브랜드 일반상품 비중이 높다.
+  const pageStarts = [1, 101];
 
   const allItems: NaverShopItem[] = [];
-  for (let i = 0; i < queries.length; i++) {
-    const q = queries[i];
-    const r = await searchNaverShopping(q.kw, 1, 100, q.sort);
+  // 쿼리 × 페이지 조합을 순차 호출 (200ms 간격으로 429 방지)
+  const calls: { kw: string; sort: 'sim' | 'date'; start: number }[] = [];
+  for (const q of queries) {
+    for (const start of pageStarts) {
+      calls.push({ kw: q.kw, sort: q.sort, start });
+    }
+  }
+  for (let i = 0; i < calls.length; i++) {
+    const c = calls[i];
+    const r = await searchNaverShopping(c.kw, c.start, 100, c.sort);
     diagnostic.calls.push({
-      query: q.kw,
-      sort: q.sort,
+      query: `${c.kw}@${c.start}`,
+      sort: c.sort,
       status: r.status,
       errorText: r.errorText,
       rawCount: r.items.length,
       retries: r.retries,
     });
     allItems.push(...r.items);
-    if (i < queries.length - 1) {
+    if (i < calls.length - 1) {
       await new Promise((res) => setTimeout(res, 200));
     }
   }
@@ -215,9 +225,10 @@ export async function fetchCoupangViaNaver(
   diagnostic.coupangCount = coupangOnly.length;
   diagnostic.sampleCoupangLink = coupangOnly[0]?.link?.slice(0, 120) || null;
 
-  const seen = new Set<string>();
+  const byId = new Map<string, any>();
   const products: any[] = [];
   for (const item of coupangOnly) {
+    const itemBrand = stripHtmlAndDecode(item.brand || item.maker || '');
     // 1순위: 쿠팡 URL에서 productId 추출
     let productId = extractCoupangProductId(item.link);
     if (productId) {
@@ -230,14 +241,19 @@ export async function fetchCoupangViaNaver(
       diagnostic.idExtraction.noId++;
       continue;
     }
-    if (seen.has(productId)) continue;
-    seen.add(productId);
+    if (byId.has(productId)) {
+      // 같은 상품이 다른 쿼리/페이지에서 brand 있음/없음으로 섞여 들어올 수 있음.
+      // 기존 항목 brand가 비었고 이번 항목에 brand가 있으면 보강 (브랜드 판정이 순서에 안 좌우되게).
+      const prev = byId.get(productId);
+      if (!prev.brand && itemBrand) prev.brand = itemBrand;
+      continue;
+    }
 
     const name = stripHtmlAndDecode(item.title);
     const price = parseInt(item.lprice, 10) || 0;
     if (!name || price <= 0) continue;
 
-    products.push({
+    const product = {
       productId: parseInt(productId, 10) || productId,
       productName: name,
       productPrice: price,
@@ -249,9 +265,11 @@ export async function fetchCoupangViaNaver(
       deliveryType: detectDeliveryType(name),
       rank: products.length + 1,
       source: 'naver',
-      brand: stripHtmlAndDecode(item.brand || item.maker || ''),
+      brand: itemBrand,
       category: item.category1 || '',
-    });
+    };
+    byId.set(productId, product);
+    products.push(product);
   }
   diagnostic.uniqueCount = products.length;
 
