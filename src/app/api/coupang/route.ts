@@ -262,6 +262,38 @@ function cleanCoupangImageUrl(imageUrl: string, productId: string | number): str
   return imageUrl.startsWith('//') ? 'https:' + imageUrl : imageUrl;
 }
 
+/**
+ * 결과에서 제외할 브랜드 키워드 — 패션·전자·스포츠 통합.
+ * 한글/영문 표기 모두 커버. 너무 짧은 약어(NB, LF 등)는 false positive 우려로 제외.
+ */
+const BRAND_EXCLUDE_KEYWORDS = [
+  // 패션 — 스포츠/캐주얼
+  '나이키', 'nike', '아디다스', 'adidas', '뉴발란스', 'new balance', 'newbalance',
+  '푸마', 'puma', '리복', 'reebok', '아식스', 'asics', '미즈노', 'mizuno',
+  '휠라', 'fila', '챔피언', 'champion', '언더아머', 'under armour', 'underarmour',
+  '카파', 'kappa', '엄브로', 'umbro', '데상트', 'descente',
+  // 패션 — 명품/프리미엄
+  '폴로', 'polo', '라코스테', 'lacoste', '타미힐피거', 'tommy hilfiger',
+  '캘빈클라인', 'calvin klein', '게스', 'guess', '리바이스', "levi's", 'levis',
+  '버버리', 'burberry', '구찌', 'gucci',
+  // 패션 — 국내 SPA/캐주얼
+  '유니클로', 'uniqlo', '스파오', 'spao', '에잇세컨즈', '8seconds',
+  '탑텐', 'topten', '지오다노', 'giordano', '빈폴', 'beanpole',
+  '헤지스', 'hazzys', '커스텀멜로우',
+  // 패션 — 아웃도어
+  '노스페이스', 'north face', 'northface', '컬럼비아', 'columbia',
+  '디스커버리', 'discovery', 'k2', '아이더', 'eider', '블랙야크', 'blackyak',
+  '코오롱', 'kolon', '밀레', 'millet', '네파', 'nepa',
+  // 패션 — 라이센스
+  'mlb', 'nba', 'nfl',
+  // 전자제품
+  '삼성', 'samsung', 'lg', '애플', 'apple', '샤오미', 'xiaomi',
+  '필립스', 'philips', '소니', 'sony', '파나소닉', 'panasonic',
+  '레노버', 'lenovo', '델', 'dell', 'hp', '에이수스', 'asus',
+  '캐논', 'canon', '니콘', 'nikon',
+  // 생활용품/유통
+  '다이소', 'daiso', '코카콜라', 'coca cola', 'cocacola', '펩시', 'pepsi',
+];
 
 /**
  * Data filtering and scoring logic
@@ -272,17 +304,34 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
   // Keywords that often appear as noise in unrelated searches (exclude them if they don't match the search)
   const noiseKeywords = ['글루타치온', '영양제', '비타민', '유산균', '콜라겐', '영양가득'];
   const searchWords = (searchKeyword || '').split(' ').filter(w => w.length >= 2);
+  const searchLower = (searchKeyword || '').toLowerCase();
+  // 사용자가 명시적으로 브랜드를 검색한 경우엔 브랜드 필터 건너뜀
+  const searchTargetsBrand = BRAND_EXCLUDE_KEYWORDS.some(b => searchLower.includes(b.toLowerCase()));
+  let brandRemovedCount = 0;
 
   const filtered = items.filter((item) => {
     if (!item || typeof item !== 'object') return false;
-    
+
     const price = item.productPrice || 0;
     const name = (item.productName || '').toLowerCase();
-    
+    const brand = (item.brand || '').toLowerCase();
+
     // 1. Price Filter
     if (price < minPrice || price > maxPrice) return false;
 
-    // 2. Relevancy Filter (Keyword matching)
+    // 2. Brand Filter — 사용자가 명시적으로 검색한 게 아니면 브랜드 상품 제외
+    if (!searchTargetsBrand) {
+      const matchedBrand = BRAND_EXCLUDE_KEYWORDS.find(b => {
+        const bLower = b.toLowerCase();
+        return name.includes(bLower) || brand.includes(bLower);
+      });
+      if (matchedBrand) {
+        brandRemovedCount++;
+        return false;
+      }
+    }
+
+    // 3. Relevancy Filter (Keyword matching)
     // If the name contains noise keywords but the search doesn't, filter it out
     const containsNoise = noiseKeywords.some(noise => name.includes(noise));
     const searchHasNoise = noiseKeywords.some(noise => searchKeyword.toLowerCase().includes(noise));
@@ -292,7 +341,7 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
       return false;
     }
 
-    // 3. Optional: Minimum word match (At least one significant word from search should appear)
+    // 4. Optional: Minimum word match (At least one significant word from search should appear)
     if (searchWords.length > 0) {
       const matchCount = searchWords.filter(word => name.includes(word.toLowerCase())).length;
       if (matchCount === 0 && searchWords.length >= 2) {
@@ -305,7 +354,7 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
     return true;
   });
 
-  console.log(`[Filter] ${filtered.length} items passed filter`);
+  console.log(`[Filter] ${filtered.length} items passed filter (brand removed: ${brandRemovedCount}${searchTargetsBrand ? ', brand filter skipped — search targets a brand' : ''})`);
 
   const scored = filtered.map((item) => {
     const price = item.productPrice || 1;
@@ -368,12 +417,9 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
       '침대', '의자', '양말', '물티슈', '샴푸', '치약', '칫솔', '비타민', '영양제', '슬리퍼',
       '텀블러', '선스크린', '면도기', '물통', '베개'
     ];
-    const brandKeywords = ['삼성', 'SAMSUNG', 'LG', '애플', 'APPLE', '샤오미', '나이키', '아디다스', '다이소', '필립스'];
-
     const lowerName = (item.productName || '').toLowerCase();
     const isExactRed = redOceans.some(red => lowerName === red.toLowerCase());
     const isContainsRed = redOceans.some(red => lowerName.includes(red.toLowerCase()));
-    const hasBrand = brandKeywords.some(brand => lowerName.includes(brand.toLowerCase()));
 
     // 소싱 기회 지수: 시장수요(35%) + 소싱적합성(30%) + 진입용이성(35%)
     let opportunityScore = Math.round(
@@ -391,7 +437,6 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
     }
 
     opportunityScore -= redOceanPenalty;
-    if (hasBrand) opportunityScore -= 15;
     opportunityScore -= lowPricePenalty;
     opportunityScore = Math.max(0, Math.min(100, opportunityScore));  // floor 제거 (인플레이션 차단)
 
