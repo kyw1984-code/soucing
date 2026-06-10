@@ -76,8 +76,11 @@ export async function GET(request: NextRequest) {
     }
 
     // 1) 캐시 miss이면 네이버 쇼핑 API로 쿠팡 상품 수집 후 상위 N개 리뷰수 보강
+    let naverDiagnostic: any = null;
     if (coupangData.length === 0) {
-      coupangData = await fetchCoupangViaNaver(keyword);
+      const naverResult = await fetchCoupangViaNaver(keyword);
+      coupangData = naverResult.items;
+      naverDiagnostic = naverResult.diagnostic;
       debug.api = coupangData.length;
       console.log(`[Naver Handler] naver=${debug.api}`);
 
@@ -106,11 +109,12 @@ export async function GET(request: NextRequest) {
     if (coupangData.length === 0) {
       console.error(`[Coupang API Handler] No data from API!`);
       return NextResponse.json({
-        error: 'API에서 데이터를 가져오지 못했습니다. 쿠팡 API 상태를 확인해주세요.',
+        error: '검색 결과를 가져오지 못했습니다. 잠시 후 다시 시도해주세요.',
         debug: {
           keyword,
           apiDataCount: 0,
-          message: 'Both scraper and API returned 0 results'
+          message: 'Naver search returned 0 Coupang items',
+          naver: naverDiagnostic,
         }
       }, { status: 500 });
     }
