@@ -8,7 +8,8 @@
       "Bash(git add src/app/page.tsx)",
       "Bash(git add ERROR_VERIFICATION_REPORT.md)",
       "Bash(git commit -m \"$(cat <<''EOF''\nfeat: 페이지 하단에 쇼크트리 홈페이지 및 유튜브 링크 추가\n\n- 푸터 섹션을 페이지 하단 중앙에 추가\n- 쇼크트리 홈페이지 링크 (https://hoonpro.liveklass.com/)\n- 쇼크트리 유튜브 링크 (https://www.youtube.com/@saupsin89)\n- 새 탭에서 열리도록 설정 및 보안 속성 추가\n- 다크모드 지원 및 호버 효과 적용\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "mcp__a748efd8-f2e1-4e32-b8e8-c61aff6dfbc5__get_runtime_logs"
+      "mcp__a748efd8-f2e1-4e32-b8e8-c61aff6dfbc5__get_runtime_logs",
+      "mcp__Vercel__get_runtime_logs"
     ]
   }
 }
