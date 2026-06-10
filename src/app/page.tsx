@@ -147,6 +147,7 @@ interface Product {
     sourcingScore: number;
     opportunityScore: number;
     grade: "Great" | "Excellent" | "Good" | "Bad";
+    estimated?: boolean; // 리뷰 미확인 → 순위·가격 기반 추정 점수
   };
 }
 
@@ -1447,6 +1448,34 @@ export default function SourcingDashboard() {
                           판매지수 {product.calculated.saleIndex}
                         </span>
                       </div>
+                      <div className="flex items-center gap-1.5 mb-3">
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-black ring-1 ${getGradeStyle(product.calculated.grade)}`}
+                          title="시장수요·소싱적합성·진입용이성을 종합한 소싱 기회 지수 (0~100)"
+                        >
+                          기회지수 {product.calculated.opportunityScore}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold ring-1 ${
+                            product.calculated.competitionStrength < 25
+                              ? "bg-emerald-50 text-emerald-700 ring-emerald-500/20"
+                              : product.calculated.competitionStrength < 45
+                                ? "bg-amber-50 text-amber-700 ring-amber-500/20"
+                                : "bg-rose-50 text-rose-700 ring-rose-500/20"
+                          }`}
+                          title="진입 난이도 — 노출 순위·가격대·레드오션 키워드 기반 (높을수록 경쟁 치열)"
+                        >
+                          경쟁 {product.calculated.competitionStrength < 25 ? "낮음" : product.calculated.competitionStrength < 45 ? "보통" : "높음"}
+                        </span>
+                        {product.calculated.estimated && (
+                          <span
+                            className="text-[9px] text-slate-300 font-bold"
+                            title="리뷰 데이터 미확인 — 네이버 인기순위·가격 기반 추정치"
+                          >
+                            추정
+                          </span>
+                        )}
+                      </div>
                       <div className="flex flex-col gap-1.5 mb-4">
                         <div className="flex justify-between items-center">
                           <span className="text-lg font-black text-indigo-600">
@@ -1568,6 +1597,51 @@ export default function SourcingDashboard() {
                         현재 쿠팡가:{" "}
                         {selectedProduct.productPrice.toLocaleString()}원
                       </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-6 border-t border-dashed border-slate-200">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-black text-slate-500 uppercase tracking-widest">
+                        소싱 지표
+                      </h4>
+                      <div className="flex items-center gap-2">
+                        {selectedProduct.calculated.estimated && (
+                          <span
+                            className="text-[9px] font-bold text-slate-400"
+                            title="리뷰 데이터 미확인 — 네이버 인기순위·가격 기반 추정치"
+                          >
+                            순위·가격 기반 추정
+                          </span>
+                        )}
+                        <span
+                          className={`px-3 py-1 rounded-full text-[10px] font-bold ring-1 ${getGradeStyle(selectedProduct.calculated.grade)}`}
+                        >
+                          {selectedProduct.calculated.grade}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: "기회지수", value: selectedProduct.calculated.opportunityScore, desc: "수요·적합성·진입용이성 종합" },
+                        { label: "판매지수", value: selectedProduct.calculated.saleIndex, desc: "네이버 인기순위·리뷰 기반 수요" },
+                        { label: "경쟁강도", value: selectedProduct.calculated.competitionStrength, desc: "낮을수록 진입 쉬움" },
+                        { label: "소싱적합", value: selectedProduct.calculated.sourcingScore, desc: "가격대·배송유형 적합도" },
+                      ].map((m) => (
+                        <div key={m.label} className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                          <div className="flex items-baseline justify-between mb-1">
+                            <span className="text-[10px] font-bold text-slate-500">{m.label}</span>
+                            <span className="text-lg font-black text-slate-800">{m.value}</span>
+                          </div>
+                          <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden mb-1.5">
+                            <div
+                              className={`h-full rounded-full ${m.label === "경쟁강도" ? "bg-rose-400" : "bg-indigo-500"}`}
+                              style={{ width: `${Math.min(100, m.value)}%` }}
+                            />
+                          </div>
+                          <p className="text-[9px] text-slate-400 font-medium leading-tight">{m.desc}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
 

@@ -391,8 +391,9 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
       ? Math.min(100, Math.round(Math.log10(ratingCount + 1) * 28))
       : 0;
 
-    // 네이버 인기순위 신호 (0~100): rank 1→100, 100→1
-    const naverRankScore = Math.max(0, Math.min(100, 101 - rank));
+    // 네이버 인기순위 신호 (0~100): 로그 감쇠로 1~400위 전체에 변별력 부여
+    // rank 1→100, 10→62, 50→35, 100→24, 200→13, 400→2 (기존 101-rank는 100위 초과가 일괄 0점)
+    const naverRankScore = Math.min(100, Math.max(2, Math.round(100 - 38 * Math.log10(Math.max(1, rank)))));
 
     // 가격 구간 점수 (소싱 적합 가격대일수록 높음)
     const priceScore =
@@ -405,25 +406,7 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
     // 판매지수: 리뷰수 + 네이버 인기순위 중심 (보강 실패 시 순위만으로 폴백)
     const saleIndex = reviewEnriched
       ? Math.min(100, Math.round(reviewStrength * 0.65 + naverRankScore * 0.35))
-      : Math.min(100, Math.round(naverRankScore * 0.9));
-
-    // 경쟁강도: 실제 리뷰수 기반으로 의미 회복 (높을수록 진입 어려움)
-    let reviewComp = 0;
-    if (ratingCount > 5000) reviewComp = 50;
-    else if (ratingCount > 1000) reviewComp = 40;
-    else if (ratingCount > 300) reviewComp = 28;
-    else if (ratingCount > 50) reviewComp = 15;
-    else if (ratingCount > 0) reviewComp = 6;
-    const qualityComp = (rating >= 4.5 && ratingCount > 400) ? 12 : 0;
-    const deliveryComp = isRocketType ? 20 : deliveryType === 'jet' ? 12 : 0;
-    const priceComp = price < 15000 ? 18 : price < 35000 ? 10 : 0;
-    const competitionStrength = Math.min(100, reviewComp + qualityComp + deliveryComp + priceComp);
-
-    // 매력도(소싱적합): 비로켓 우대 + 가격 적합 + 어느정도 팔리는 시장
-    const nonRocketBonus = deliveryType === 'general' ? 22 : deliveryType === 'jet' ? 10 : 0;
-    const sourcingScore = Math.min(100, Math.round(
-      priceScore * 1.2 + nonRocketBonus + (saleIndex / 100) * 25 - lowPricePenalty
-    ));
+      : naverRankScore;
 
     const redOceans = [
       '이어폰', '블루투스', '텐트', '캠핑텐트', '마스크', '생수', '기저귀', '충전기', '케이블',
@@ -433,6 +416,33 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
     const lowerName = (item.productName || '').toLowerCase();
     const isExactRed = redOceans.some(red => lowerName === red.toLowerCase());
     const isContainsRed = redOceans.some(red => lowerName.includes(red.toLowerCase()));
+
+    // 경쟁강도 (높을수록 진입 어려움). 리뷰/배송 신호는 보강 성공 시에만 살아나므로,
+    // 항상 살아있는 신호(순위·가격·레드오션 키워드)를 기본 축으로 사용.
+    let reviewComp = 0;
+    if (ratingCount > 5000) reviewComp = 50;
+    else if (ratingCount > 1000) reviewComp = 40;
+    else if (ratingCount > 300) reviewComp = 28;
+    else if (ratingCount > 50) reviewComp = 15;
+    else if (ratingCount > 0) reviewComp = 6;
+    const qualityComp = (rating >= 4.5 && ratingCount > 400) ? 12 : 0;
+    const deliveryComp = isRocketType ? 20 : deliveryType === 'jet' ? 12 : 0;
+    const priceComp = price < 15000 ? 18 : price < 35000 ? 10 : 0;
+    // 상위 노출 = 이미 검증된 판매자들이 자리잡은 시장 = 밀어내기 어려움
+    const rankComp =
+      rank <= 10 ? 35 :
+      rank <= 30 ? 28 :
+      rank <= 60 ? 22 :
+      rank <= 100 ? 16 :
+      rank <= 200 ? 10 : 5;
+    const redOceanComp = isContainsRed ? 12 : 0;
+    const competitionStrength = Math.min(100, reviewComp + qualityComp + deliveryComp + priceComp + rankComp + redOceanComp);
+
+    // 매력도(소싱적합): 비로켓 우대 + 가격 적합 + 어느정도 팔리는 시장
+    const nonRocketBonus = deliveryType === 'general' ? 22 : deliveryType === 'jet' ? 10 : 0;
+    const sourcingScore = Math.min(100, Math.round(
+      priceScore * 1.2 + nonRocketBonus + (saleIndex / 100) * 25 - lowPricePenalty
+    ));
 
     // 소싱 기회 지수: 시장수요(35%) + 소싱적합성(30%) + 진입용이성(35%)
     let opportunityScore = Math.round(
@@ -453,11 +463,11 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
     opportunityScore -= lowPricePenalty;
     opportunityScore = Math.max(0, Math.min(100, opportunityScore));  // floor 제거 (인플레이션 차단)
 
-    // Grade Logic: 판매신호 없는 Great 차단, 저리뷰·저가가 Good 못 되게
+    // Grade Logic: 판매신호 없는 Great 차단, 분포 변별력 확보 (목표: Great ≤15%, Bad ≥15%)
     let grade: 'Great' | 'Excellent' | 'Good' | 'Bad';
-    if (opportunityScore >= 65 && saleIndex >= 40) grade = 'Great';
-    else if (opportunityScore >= 50) grade = 'Excellent';
-    else if (opportunityScore >= 35) grade = 'Good';
+    if (opportunityScore >= 62 && saleIndex >= 45) grade = 'Great';
+    else if (opportunityScore >= 57) grade = 'Excellent';
+    else if (opportunityScore >= 45) grade = 'Good';
     else grade = 'Bad';
 
     return {
@@ -470,6 +480,7 @@ function filterAndScoreProducts(items: any[], minPrice: number, maxPrice: number
         sourcingScore,
         opportunityScore,
         grade,
+        estimated: !reviewEnriched, // 리뷰 미확인 → 순위·가격 기반 추정 점수
       }
     };
   });
